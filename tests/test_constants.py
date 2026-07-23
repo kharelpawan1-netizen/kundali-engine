@@ -1,18 +1,32 @@
 """
 tests/test_constants.py
+
+Tests for astronomy.constants
 """
 
-from astronomy.constants import *
+from astronomy.constants import (
+    DEGREES_PER_SIGN,
+    NAKSHATRA_SIZE,
+    PADA_SIZE,
+    PLANETS,
+    ZODIAC_SIGNS,
+)
 
-print("Zodiac Signs:", ZODIAC_SIGNS)
 
-print("Degrees Per Sign:", DEGREES_PER_SIGN)
+def main():
+    print("Zodiac Signs:", ZODIAC_SIGNS)
 
-print("Nakshatra Size:", NAKSHATRA_SIZE)
+    print("Degrees Per Sign:", DEGREES_PER_SIGN)
 
-print("Pada Size:", PADA_SIZE)
+    print("Nakshatra Size:", NAKSHATRA_SIZE)
 
-print("Planets:")
+    print("Pada Size:", PADA_SIZE)
 
-for name in PLANETS:
-    print("-", name)
+    print("Planets:")
+
+    for name in PLANETS:
+        print("-", name)
+
+
+if __name__ == "__main__":
+    main()

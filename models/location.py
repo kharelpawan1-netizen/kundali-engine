@@ -73,10 +73,7 @@ class Location:
             (latitude, longitude)
         """
 
-        return (
-            self.latitude,
-            self.longitude
-        )
+        return (self.latitude, self.longitude)
 
     def __str__(self):
         """

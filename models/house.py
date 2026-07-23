@@ -74,7 +74,4 @@ class House:
         Human-readable representation.
         """
 
-        return (
-            f"House {self.number}: "
-            f"{self.sign}"
-        )
+        return f"House {self.number}: " f"{self.sign}"

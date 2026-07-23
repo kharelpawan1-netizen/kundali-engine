@@ -7,7 +7,6 @@ Compatible with Python 3.9
 """
 
 NAKSHATRAS = [
-
     ("Ashwini", "Ketu"),
     ("Bharani", "Venus"),
     ("Krittika", "Sun"),
@@ -17,7 +16,6 @@ NAKSHATRAS = [
     ("Punarvasu", "Jupiter"),
     ("Pushya", "Saturn"),
     ("Ashlesha", "Mercury"),
-
     ("Magha", "Ketu"),
     ("Purva Phalguni", "Venus"),
     ("Uttara Phalguni", "Sun"),
@@ -27,7 +25,6 @@ NAKSHATRAS = [
     ("Vishakha", "Jupiter"),
     ("Anuradha", "Saturn"),
     ("Jyeshtha", "Mercury"),
-
     ("Mula", "Ketu"),
     ("Purva Ashadha", "Venus"),
     ("Uttara Ashadha", "Sun"),
@@ -36,7 +33,7 @@ NAKSHATRAS = [
     ("Shatabhisha", "Rahu"),
     ("Purva Bhadrapada", "Jupiter"),
     ("Uttara Bhadrapada", "Saturn"),
-    ("Revati", "Mercury")
+    ("Revati", "Mercury"),
 ]
 
 
@@ -60,8 +57,4 @@ def get_nakshatra(longitude):
 
     pada = int(inside / (NAKSHATRA_SIZE / 4)) + 1
 
-    return (
-        name,
-        pada,
-        lord
-    )
+    return (name, pada, lord)

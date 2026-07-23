@@ -4,19 +4,9 @@ tests/test_julian.py
 
 from datetime import datetime
 
-from astronomy.julian import (
-    datetime_to_julian,
-    julian_to_datetime
-)
+from astronomy.julian import datetime_to_julian, julian_to_datetime
 
-dt = datetime(
-    2000,
-    1,
-    1,
-    12,
-    0,
-    0
-)
+dt = datetime(2000, 1, 1, 12, 0, 0)
 
 jd = datetime_to_julian(dt)
 

@@ -29,7 +29,6 @@ class NakshatraInfo:
 
 
 NAKSHATRAS = {
-
     "Ashwini": NakshatraInfo(
         name="Ashwini",
         lord="Ketu",
@@ -39,9 +38,8 @@ NAKSHATRAS = {
         yoni="Horse",
         element="Earth",
         motivation="Dharma",
-        nature="Swift"
+        nature="Swift",
     ),
-
     "Bharani": NakshatraInfo(
         name="Bharani",
         lord="Venus",
@@ -51,9 +49,8 @@ NAKSHATRAS = {
         yoni="Elephant",
         element="Earth",
         motivation="Artha",
-        nature="Fierce"
+        nature="Fierce",
     ),
-
     "Krittika": NakshatraInfo(
         name="Krittika",
         lord="Sun",
@@ -63,9 +60,8 @@ NAKSHATRAS = {
         yoni="Sheep",
         element="Fire",
         motivation="Kama",
-        nature="Sharp"
+        nature="Sharp",
     ),
-
     "Rohini": NakshatraInfo(
         name="Rohini",
         lord="Moon",
@@ -75,9 +71,8 @@ NAKSHATRAS = {
         yoni="Serpent",
         element="Earth",
         motivation="Moksha",
-        nature="Fixed"
+        nature="Fixed",
     ),
-
     "Mrigashira": NakshatraInfo(
         name="Mrigashira",
         lord="Mars",
@@ -87,9 +82,8 @@ NAKSHATRAS = {
         yoni="Serpent",
         element="Earth",
         motivation="Moksha",
-        nature="Soft"
+        nature="Soft",
     ),
-
     "Ardra": NakshatraInfo(
         name="Ardra",
         lord="Rahu",
@@ -99,9 +93,8 @@ NAKSHATRAS = {
         yoni="Dog",
         element="Water",
         motivation="Kama",
-        nature="Sharp"
+        nature="Sharp",
     ),
-
     "Punarvasu": NakshatraInfo(
         name="Punarvasu",
         lord="Jupiter",
@@ -111,9 +104,8 @@ NAKSHATRAS = {
         yoni="Cat",
         element="Water",
         motivation="Artha",
-        nature="Movable"
+        nature="Movable",
     ),
-
     "Pushya": NakshatraInfo(
         name="Pushya",
         lord="Saturn",
@@ -123,9 +115,8 @@ NAKSHATRAS = {
         yoni="Goat",
         element="Water",
         motivation="Dharma",
-        nature="Light"
+        nature="Light",
     ),
-
     "Ashlesha": NakshatraInfo(
         name="Ashlesha",
         lord="Mercury",
@@ -135,16 +126,14 @@ NAKSHATRAS = {
         yoni="Cat",
         element="Water",
         motivation="Dharma",
-        nature="Sharp"
+        nature="Sharp",
     ),
-
     # ------------------------------------------------------------------
     # TODO:
     # Continue the remaining 18 Nakshatras
     # (Magha → Revati)
     # We'll complete them in the next phase.
     # ------------------------------------------------------------------
-
 }
 
 

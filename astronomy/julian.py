@@ -30,18 +30,10 @@ def datetime_to_julian(dt: datetime) -> float:
     """
 
     hour = (
-        dt.hour +
-        dt.minute / 60.0 +
-        dt.second / 3600.0 +
-        dt.microsecond / 3600000000.0
+        dt.hour + dt.minute / 60.0 + dt.second / 3600.0 + dt.microsecond / 3600000000.0
     )
 
-    return swe.julday(
-        dt.year,
-        dt.month,
-        dt.day,
-        hour
-    )
+    return swe.julday(dt.year, dt.month, dt.day, hour)
 
 
 def julian_to_datetime(jd: float) -> datetime:
@@ -65,17 +57,6 @@ def julian_to_datetime(jd: float) -> datetime:
 
     minutes = int((hour - hours) * 60)
 
-    seconds = int(
-        round(
-            (((hour - hours) * 60) - minutes) * 60
-        )
-    )
+    seconds = int(round((((hour - hours) * 60) - minutes) * 60))
 
-    return datetime(
-        year,
-        month,
-        day,
-        hours,
-        minutes,
-        seconds
-    )
+    return datetime(year, month, day, hours, minutes, seconds)

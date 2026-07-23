@@ -27,15 +27,9 @@ FULL_CIRCLE = 360.0
 
 TOTAL_NAKSHATRAS = 27
 
-NAKSHATRA_SIZE = (
-    FULL_CIRCLE /
-    TOTAL_NAKSHATRAS
-)
+NAKSHATRA_SIZE = FULL_CIRCLE / TOTAL_NAKSHATRAS
 
-PADA_SIZE = (
-    NAKSHATRA_SIZE /
-    4.0
-)
+PADA_SIZE = NAKSHATRA_SIZE / 4.0
 
 # ==========================================================
 # Houses
@@ -55,7 +49,7 @@ PLANETS = {
     "Mars": swe.MARS,
     "Jupiter": swe.JUPITER,
     "Saturn": swe.SATURN,
-    "Rahu": swe.MEAN_NODE
+    "Rahu": swe.MEAN_NODE,
 }
 
 # ==========================================================
@@ -68,10 +62,7 @@ SIDEREAL_MODE = swe.SIDM_LAHIRI
 # Swiss Ephemeris Flags
 # ==========================================================
 
-CALCULATION_FLAGS = (
-    swe.FLG_SWIEPH |
-    swe.FLG_SIDEREAL
-)
+CALCULATION_FLAGS = swe.FLG_SWIEPH | swe.FLG_SIDEREAL
 
 # ==========================================================
 # Time

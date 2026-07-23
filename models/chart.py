@@ -15,8 +15,8 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional
 
 from models.birth_data import BirthData
-from models.planet import Planet
 from models.house import House
+from models.planet import Planet
 
 
 @dataclass

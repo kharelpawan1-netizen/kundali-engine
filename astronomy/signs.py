@@ -14,7 +14,7 @@ SIGNS = [
     "Sagittarius",
     "Capricorn",
     "Aquarius",
-    "Pisces"
+    "Pisces",
 ]
 
 
@@ -38,8 +38,4 @@ def get_sign(longitude):
 
     sign_degree = longitude % 30
 
-    return (
-        SIGNS[sign_number],
-        sign_number + 1,
-        sign_degree
-    )
+    return (SIGNS[sign_number], sign_number + 1, sign_degree)

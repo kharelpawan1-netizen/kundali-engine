@@ -106,8 +106,4 @@ class Planet:
         Human-readable string.
         """
 
-        return (
-            f"{self.name}: "
-            f"{self.sign} "
-            f"{self.sign_degree:.2f}°"
-        )
+        return f"{self.name}: " f"{self.sign} " f"{self.sign_degree:.2f}°"

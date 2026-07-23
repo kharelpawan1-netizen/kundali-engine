@@ -79,14 +79,7 @@ class BirthData:
         10:30:00 -> 10.5
         """
 
-        return (
-            self.hour +
-            self.minute / 60.0 +
-            self.second / 3600.0
-        )
+        return self.hour + self.minute / 60.0 + self.second / 3600.0
 
     def __str__(self):
-        return (
-            f"{self.name} "
-            f"({self.birth_datetime})"
-        )
+        return f"{self.name} " f"({self.birth_datetime})"

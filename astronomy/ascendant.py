@@ -26,15 +26,11 @@ def calculate_ascendant(julian_day, latitude, longitude):
     """
 
     cusps, ascmc = swe.houses_ex(
-        julian_day,
-        latitude,
-        longitude,
-        b'P',
-        swe.FLG_SIDEREAL
+        julian_day, latitude, longitude, b"P", swe.FLG_SIDEREAL
     )
 
     return {
         "ascendant": ascmc[0] % 360,
         "midheaven": ascmc[1] % 360,
-        "cusps": list(cusps)
+        "cusps": list(cusps),
     }

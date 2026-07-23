@@ -49,11 +49,7 @@ class SwissEphemeris:
         Calculate one planet.
         """
 
-        result, flag = swe.calc_ut(
-            jd,
-            planet_id,
-            swe.FLG_SWIEPH | swe.FLG_SIDEREAL
-        )
+        result, flag = swe.calc_ut(jd, planet_id, swe.FLG_SWIEPH | swe.FLG_SIDEREAL)
 
         return result
 
@@ -70,7 +66,7 @@ class SwissEphemeris:
             "Mars": swe.MARS,
             "Jupiter": swe.JUPITER,
             "Saturn": swe.SATURN,
-            "Rahu": swe.MEAN_NODE
+            "Rahu": swe.MEAN_NODE,
         }
 
         data = {}
@@ -82,13 +78,6 @@ class SwissEphemeris:
 
         ketu = (rahu + 180.0) % 360.0
 
-        data["Ketu"] = (
-            ketu,
-            0,
-            0,
-            0,
-            0,
-            0
-        )
+        data["Ketu"] = (ketu, 0, 0, 0, 0, 0)
 
         return data
