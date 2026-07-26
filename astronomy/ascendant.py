@@ -3,34 +3,56 @@ astronomy/ascendant.py
 
 Ascendant (Lagna) calculations.
 
-Version: 1.3.1
-Compatible with Python 3.9
+This module converts the raw Swiss Ephemeris house
+calculation into the project's Ascendant model.
+
+Version:
+    1.0.0
 """
 
-import swisseph as swe
+from __future__ import annotations
+
+from models.ascendant import Ascendant
+from models.location import Location
 
 
-def calculate_ascendant(julian_day, latitude, longitude):
+def ascendant_longitude(
+    julian_day: float,
+    location: Location,
+) -> float:
     """
-    Calculate Ascendant and Midheaven.
-
-    Parameters
-    ----------
-    julian_day : float
-    latitude : float
-    longitude : float
-
-    Returns
-    -------
-    dict
+    Return Ascendant longitude.
     """
 
-    cusps, ascmc = swe.houses_ex(
-        julian_day, latitude, longitude, b"P", swe.FLG_SIDEREAL
-    )
+    raise NotImplementedError
 
-    return {
-        "ascendant": ascmc[0] % 360,
-        "midheaven": ascmc[1] % 360,
-        "cusps": list(cusps),
-    }
+
+def ascendant_sign(
+    longitude: float,
+):
+    """
+    Return zodiac sign.
+    """
+
+    raise NotImplementedError
+
+
+def ascendant_degree(
+    longitude: float,
+):
+    """
+    Return degree inside the sign.
+    """
+
+    raise NotImplementedError
+
+
+def calculate_ascendant(
+    julian_day: float,
+    location: Location,
+) -> Ascendant:
+    """
+    Calculate complete Ascendant.
+    """
+
+    raise NotImplementedError

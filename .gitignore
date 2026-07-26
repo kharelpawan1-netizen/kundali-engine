@@ -152,7 +152,7 @@ reports/*.jpg
 # Uncomment if you DO NOT want to upload ephemeris files.
 ###############################################################################
 
-# ephe/
+ephe/
 
 ###############################################################################
 # Local Python Configuration
