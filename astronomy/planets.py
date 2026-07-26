@@ -1,13 +1,8 @@
 """
-astronomy/planets.py
+Planet calculation engine.
 
-Planet engine.
-
-This module computes all grahas for a given
-Julian Day using the Swiss Ephemeris wrapper.
-
-Version:
-    1.0.0
+This module calculates all nine grahas
+using the Swiss Ephemeris wrapper.
 """
 
 from __future__ import annotations
@@ -23,25 +18,26 @@ def calculate_planets(
     julian_day: float,
 ) -> Dict[Graha, EphemerisPosition]:
     """
-    Calculate positions of all nine grahas.
+    Calculate all grahas.
 
     Parameters
     ----------
     julian_day
-        Julian Day (UT).
+        Julian Day.
 
     Returns
     -------
     dict
-        Mapping of Graha → EphemerisPosition.
+        Mapping:
+            Graha -> EphemerisPosition
     """
 
-    planets: Dict[Graha, EphemerisPosition] = {}
+    positions = {}
 
     for graha in Graha:
-        planets[graha] = planet_position(
+        positions[graha] = planet_position(
             julian_day,
             graha,
         )
 
-    return planets
+    return positions

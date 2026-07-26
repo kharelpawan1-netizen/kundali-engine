@@ -35,8 +35,6 @@ class Location:
 
     timezone : str
         IANA timezone name.
-        Example:
-            Asia/Kathmandu
 
     elevation : float
         Elevation above sea level in meters.
@@ -49,35 +47,18 @@ class Location:
     """
 
     name: str
-
     latitude: float
-
     longitude: float
-
     timezone: str
 
     elevation: float = 0.0
-
     country: str = ""
-
     city: str = ""
 
     @property
     def coordinates(self):
-        """
-        Returns latitude and longitude.
-
-        Returns
-        -------
-        tuple
-            (latitude, longitude)
-        """
-
+        """Return (latitude, longitude)."""
         return (self.latitude, self.longitude)
 
     def __str__(self):
-        """
-        Human-readable representation.
-        """
-
         return self.name
