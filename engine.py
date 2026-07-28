@@ -1,136 +1,192 @@
 """
 engine.py
 
-Main Horoscope Engine
+Main Horoscope Engine.
+
+Integrates:
+    - Local birth time -> UTC
+    - Julian Day calculation
+    - Lahiri ayanamsa
+    - Ascendant / Lagna
+    - Whole Sign houses
+    - Navagraha planetary positions
+    - Zodiac sign information
+    - Nakshatra and pada
+    - Planet-to-house assignment
+
 Compatible with Python 3.9
 """
 
+from __future__ import annotations
+
 from astronomy.ascendant import calculate_ascendant
-from astronomy.nakshatra import get_nakshatra
-from astronomy.signs import get_sign
-from astronomy.swiss import SwissEphemeris
+from astronomy.julian import datetime_to_julian
+from astronomy.nakshatra import longitude_to_nakshatra, nakshatra_pada
+from astronomy.planet_houses import assign_planets_to_houses
+from astronomy.planets import calculate_planets
+from astronomy.signs import sign_degree, sign_enum
+from astronomy.swiss import get_ayanamsha
 from astronomy.timezone import local_to_utc
 from models.chart import BirthChart
-from models.house import House
 from models.planet import Planet
 
 
 class HoroscopeEngine:
     """
-    Main Kundali Engine.
+    Main Kundali calculation engine.
+
+    The engine coordinates the astronomy and astrology modules
+    without duplicating their underlying calculations.
     """
 
     def __init__(self):
-        self.swe = SwissEphemeris()
+        """Initialize the Horoscope Engine."""
+        pass
 
     def build_chart(self, birth):
         """
-        Build complete birth chart.
+        Build a complete birth chart.
+
+        Parameters
+        ----------
+        birth
+            BirthData instance containing the native's birth
+            datetime and geographical location.
+
+        Returns
+        -------
+        BirthChart
+            Fully populated birth chart.
         """
 
-        # --------------------------------------------
-        # Local Time -> UTC
-        # --------------------------------------------
+        # =====================================================
+        # 1. LOCAL TIME -> UTC
+        # =====================================================
 
-        utc_dt = local_to_utc(birth.birth_datetime, birth.location.timezone)
+        utc_dt = local_to_utc(
+            birth.birth_datetime,
+            birth.location.timezone,
+        )
 
-        hour = utc_dt.hour + utc_dt.minute / 60 + utc_dt.second / 3600
+        # =====================================================
+        # 2. UTC -> JULIAN DAY
+        # =====================================================
 
-        jd = self.swe.julian_day(utc_dt.year, utc_dt.month, utc_dt.day, hour)
+        jd = datetime_to_julian(utc_dt)
 
-        ayanamsa = self.swe.ayanamsa(jd)
+        # =====================================================
+        # 3. AYANAMSHA
+        # =====================================================
 
-        chart = BirthChart(julian_day=jd, ayanamsa=ayanamsa)
+        ayanamsa = get_ayanamsha(jd)
 
-        # --------------------------------------------
-        # Ascendant
-        # --------------------------------------------
+        # =====================================================
+        # 4. CREATE BIRTH CHART
+        # =====================================================
 
-        asc = calculate_ascendant(jd, birth.location.latitude, birth.location.longitude)
+        chart = BirthChart(
+            birth_data=birth,
+            julian_day=jd,
+            ayanamsa=ayanamsa,
+        )
 
-        asc_longitude = asc["ascendant"]
+        # =====================================================
+        # 5. ASCENDANT / LAGNA
+        # =====================================================
 
-        chart.ascendant = asc_longitude
+        ascendant = calculate_ascendant(
+            jd,
+            birth.location,
+        )
 
-        asc_sign, _, _ = get_sign(asc_longitude)
+        chart.ascendant = ascendant.longitude
+        chart.ascendant_sign = ascendant.sign.value
+        chart.ascendant_degree = ascendant.degree_in_sign
 
-        chart.ascendant_sign = asc_sign
+        # =====================================================
+        # 6. WHOLE SIGN HOUSES
+        # =====================================================
 
-        # --------------------------------------------
-        # Whole Sign Houses
-        # --------------------------------------------
+        from astronomy.houses import whole_sign_houses
 
-        asc_sign_number = int(asc_longitude // 30)
+        houses = whole_sign_houses(
+            ascendant.longitude,
+        )
 
-        sign_names = [
-            "Aries",
-            "Taurus",
-            "Gemini",
-            "Cancer",
-            "Leo",
-            "Virgo",
-            "Libra",
-            "Scorpio",
-            "Sagittarius",
-            "Capricorn",
-            "Aquarius",
-            "Pisces",
-        ]
+        chart.houses = houses
 
-        for house in range(12):
+        # =====================================================
+        # 7. PLANETARY POSITIONS
+        # =====================================================
 
-            sign_index = (asc_sign_number + house) % 12
+        positions = calculate_planets(jd)
 
-            start = sign_index * 30.0
-            end = start + 30.0
+        planets = []
 
-            chart.houses[house + 1] = House(
-                number=house + 1,
-                sign=sign_names[sign_index],
-                start_longitude=start,
-                end_longitude=end,
-            )
+        for graha, position in positions.items():
 
-        # --------------------------------------------
-        # Planets
-        # --------------------------------------------
+            longitude = position.longitude
 
-        raw = self.swe.all_planets(jd)
+            # -------------------------------------------------
+            # Zodiac sign
+            # -------------------------------------------------
 
-        for name, values in raw.items():
+            sign = sign_enum(longitude)
 
-            longitude = values[0]
-            latitude = values[1]
-            distance = values[2]
-            speed = values[3]
+            # -------------------------------------------------
+            # Degree within sign
+            # -------------------------------------------------
 
-            sign, sign_number, sign_degree = get_sign(longitude)
+            degree = sign_degree(longitude)
 
-            nakshatra, pada, lord = get_nakshatra(longitude)
+            # -------------------------------------------------
+            # Nakshatra
+            # -------------------------------------------------
+
+            nakshatra = longitude_to_nakshatra(longitude)
+
+            pada = nakshatra_pada(longitude)
+
+            # -------------------------------------------------
+            # Planet model
+            # -------------------------------------------------
 
             planet = Planet(
-                name=name,
+                name=graha.display_name,
                 longitude=longitude,
-                latitude=latitude,
-                distance=distance,
-                speed=speed,
-                retrograde=speed < 0,
-                sign=sign,
-                sign_number=sign_number,
-                sign_degree=sign_degree,
-                nakshatra=nakshatra,
+                latitude=position.latitude,
+                distance=position.distance,
+                speed=position.longitude_speed,
+                retrograde=position.retrograde,
+                sign=sign.value,
+                sign_number=sign.number,
+                sign_degree=degree,
+                nakshatra=nakshatra.name,
                 pada=pada,
-                nakshatra_lord=lord,
+                nakshatra_lord=nakshatra.lord.value,
             )
 
-            # ----------------------------------------
-            # Planet House (Whole Sign)
-            # ----------------------------------------
+            planets.append(planet)
 
-            house_number = ((sign_number - asc_sign_number) % 12) + 1
+        # =====================================================
+        # 8. PLANET -> HOUSE ASSIGNMENT
+        # =====================================================
 
-            planet.house = house_number
+        planets, houses = assign_planets_to_houses(
+            planets,
+            houses,
+        )
 
-            chart.planets[name] = planet
+        # =====================================================
+        # 9. STORE PLANETS AND HOUSES
+        # =====================================================
+
+        chart.planets = {planet.name: planet for planet in planets}
+
+        chart.houses = houses
+
+        # =====================================================
+        # 10. RETURN COMPLETE CHART
+        # =====================================================
 
         return chart
