@@ -12,6 +12,15 @@ Version:
 
 from __future__ import annotations
 
+from astronomy.nakshatra import (
+    longitude_to_nakshatra,
+    nakshatra_pada,
+)
+from astronomy.signs import (
+    sign_degree,
+    sign_enum,
+)
+from astronomy.swiss import houses
 from models.ascendant import Ascendant
 from models.location import Location
 
@@ -24,7 +33,13 @@ def ascendant_longitude(
     Return Ascendant longitude.
     """
 
-    raise NotImplementedError
+    _, ascmc = houses(
+        julian_day,
+        location.latitude,
+        location.longitude,
+    )
+
+    return float(ascmc[0])
 
 
 def ascendant_sign(
@@ -34,7 +49,7 @@ def ascendant_sign(
     Return zodiac sign.
     """
 
-    raise NotImplementedError
+    return sign_enum(longitude)
 
 
 def ascendant_degree(
@@ -44,7 +59,7 @@ def ascendant_degree(
     Return degree inside the sign.
     """
 
-    raise NotImplementedError
+    return sign_degree(longitude)
 
 
 def calculate_ascendant(
@@ -55,4 +70,15 @@ def calculate_ascendant(
     Calculate complete Ascendant.
     """
 
-    raise NotImplementedError
+    longitude = ascendant_longitude(
+        julian_day,
+        location,
+    )
+
+    return Ascendant(
+        longitude=longitude,
+        sign=ascendant_sign(longitude),
+        degree_in_sign=ascendant_degree(longitude),
+        nakshatra=longitude_to_nakshatra(longitude),
+        pada=nakshatra_pada(longitude),
+    )

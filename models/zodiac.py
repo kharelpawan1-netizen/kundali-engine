@@ -48,3 +48,24 @@ class ZodiacSign(Enum):
 
     def __str__(self) -> str:
         return self.display_name
+
+
+def sign_from_number(number: int) -> ZodiacSign:
+    """
+    Return a ZodiacSign from its numerical value (1-12).
+
+    Parameters
+    ----------
+    number
+        Zodiac sign number.
+
+    Returns
+    -------
+    ZodiacSign
+    """
+
+    for sign in ZodiacSign:
+        if sign.number == number:
+            return sign
+
+    raise ValueError(f"Invalid zodiac sign number: {number}")
