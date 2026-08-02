@@ -117,7 +117,18 @@ def get_ayanamsha() -> Ayanamsha:
     """Return the current ayanamsha."""
 
     return _CURRENT_AYANAMSHA
+def ayanamsha_value(julian_day: float) -> float:
+    """
+    Return the numerical ayanamsha value in degrees
+    for the given Julian Day.
 
+    Swiss Ephemeris must already be configured with
+    the desired sidereal ayanamsha mode.
+    """
+
+    _require_initialized()
+
+    return float(swe.get_ayanamsa_ut(julian_day))
 
 # ============================================================
 # Swiss Planet Mapping
@@ -280,7 +291,7 @@ __all__ = [
     "get_ephemeris_path",
     "set_ayanamsha",
     "get_ayanamsha",
+    "ayanamsha_value",
+    "ayanamsha",
     "planet_position",
-    "planet_longitude",
-    "houses",
 ]

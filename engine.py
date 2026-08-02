@@ -1,3 +1,4 @@
+
 """
 engine.py
 
@@ -25,7 +26,7 @@ from astronomy.nakshatra import longitude_to_nakshatra, nakshatra_pada
 from astronomy.planet_houses import assign_planets_to_houses
 from astronomy.planets import calculate_planets
 from astronomy.signs import sign_degree, sign_enum
-from astronomy.swiss import get_ayanamsha
+from astronomy.swiss import ayanamsha_value
 from astronomy.timezone import local_to_utc
 from models.chart import BirthChart
 from models.planet import Planet
@@ -78,7 +79,7 @@ class HoroscopeEngine:
         # 3. AYANAMSHA
         # =====================================================
 
-        ayanamsa = get_ayanamsha(jd)
+        ayanamsa = ayanamsha_value(jd)
 
         # =====================================================
         # 4. CREATE BIRTH CHART
@@ -100,7 +101,7 @@ class HoroscopeEngine:
         )
 
         chart.ascendant = ascendant.longitude
-        chart.ascendant_sign = ascendant.sign.value
+        chart.ascendant_sign = ascendant.sign.display_name
         chart.ascendant_degree = ascendant.degree_in_sign
 
         # =====================================================
@@ -124,7 +125,6 @@ class HoroscopeEngine:
         planets = []
 
         for graha, position in positions.items():
-
             longitude = position.longitude
 
             # -------------------------------------------------
@@ -144,7 +144,6 @@ class HoroscopeEngine:
             # -------------------------------------------------
 
             nakshatra = longitude_to_nakshatra(longitude)
-
             pada = nakshatra_pada(longitude)
 
             # -------------------------------------------------
@@ -158,12 +157,12 @@ class HoroscopeEngine:
                 distance=position.distance,
                 speed=position.longitude_speed,
                 retrograde=position.retrograde,
-                sign=sign.value,
+                sign=sign.display_name,
                 sign_number=sign.number,
                 sign_degree=degree,
                 nakshatra=nakshatra.name,
                 pada=pada,
-                nakshatra_lord=nakshatra.lord.value,
+                nakshatra_lord=nakshatra.lord,
             )
 
             planets.append(planet)
@@ -181,7 +180,10 @@ class HoroscopeEngine:
         # 9. STORE PLANETS AND HOUSES
         # =====================================================
 
-        chart.planets = {planet.name: planet for planet in planets}
+        chart.planets = {
+            planet.name: planet
+            for planet in planets
+        }
 
         chart.houses = houses
 
@@ -190,3 +192,4 @@ class HoroscopeEngine:
         # =====================================================
 
         return chart
+

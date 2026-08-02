@@ -1,3 +1,4 @@
+
 """
 main.py
 
@@ -8,21 +9,30 @@ Compatible with Python 3.9
 
 from datetime import datetime
 
-from astronomy.signs import get_sign
+from astronomy.signs import sign_degree, sign_enum
+from astronomy.swiss import Ayanamsha, set_ayanamsha, set_ephemeris_path
 from engine import HoroscopeEngine
 from models.birth_data import BirthData
 from models.location import Location
 
 
+EPHEMERIS_PATH = r"D:\kundali\ephe"
+
+
 def print_separator():
-    """Print a separator line."""
+    """Print a separator."""
     print("=" * 70)
 
 
 def main():
-    """
-    Main entry point.
-    """
+    """Build and display a test Kundali."""
+
+    # ---------------------------------------------------------
+    # Configure Swiss Ephemeris
+    # ---------------------------------------------------------
+
+    set_ephemeris_path(EPHEMERIS_PATH)
+    set_ayanamsha(Ayanamsha.LAHIRI)
 
     # ---------------------------------------------------------
     # Location
@@ -53,7 +63,6 @@ def main():
     # ---------------------------------------------------------
 
     engine = HoroscopeEngine()
-
     chart = engine.build_chart(birth)
 
     # ---------------------------------------------------------
@@ -72,9 +81,18 @@ def main():
     print(f"Julian Day : {chart.julian_day:.6f}")
     print(f"Ayanamsa   : {chart.ayanamsa:.6f}")
 
-    asc_sign, _, asc_degree = get_sign(chart.ascendant)
+    # ---------------------------------------------------------
+    # Ascendant
+    # ---------------------------------------------------------
 
-    print(f"Ascendant  : {asc_sign} {asc_degree:.2f}°")
+    asc_sign = sign_enum(chart.ascendant)
+    asc_degree = sign_degree(chart.ascendant)
+
+    print(
+        f"Ascendant  : "
+        f"{asc_sign.display_name} "
+        f"{asc_degree:.2f}°"
+    )
 
     # ---------------------------------------------------------
     # Planets
@@ -98,10 +116,9 @@ def main():
     print("-" * len(header))
 
     for planet in chart.planets.values():
-
         print(
             f"{planet.name:<10}"
-            f"{planet.sign:<14}"
+            f"{str(planet.sign):<14}"
             f"{planet.sign_degree:>7.2f}°"
             f"{planet.house:>8}   "
             f"{planet.nakshatra:<18}"
@@ -118,16 +135,17 @@ def main():
     print_separator()
 
     for house_number in sorted(chart.houses.keys()):
-
         house = chart.houses[house_number]
 
         print(
             f"House {house.number:<2} "
-            f"{house.sign:<12} "
-            f"{house.start_longitude:>6.1f}° - "
-            f"{house.end_longitude:>6.1f}°"
+            f"{house.sign[0]:<12} "
+            f"{house.longitude:>6.1f}°"
         )
 
 
 if __name__ == "__main__":
     main()
+
+
+
