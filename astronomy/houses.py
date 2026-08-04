@@ -79,7 +79,7 @@ def whole_sign_houses(
         result[house_number] = House(
             number=house_number,
             longitude=house_longitude,
-            sign=sign.value,
+            sign=sign.display_name,
             sign_number=sign.number,
         )
 
@@ -169,7 +169,7 @@ def cusp_houses(
         result[index] = House(
             number=index,
             longitude=cusp,
-            sign=sign.value,
+            sign=sign.display_name,
             sign_number=sign.number,
         )
 

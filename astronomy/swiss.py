@@ -292,6 +292,7 @@ __all__ = [
     "set_ayanamsha",
     "get_ayanamsha",
     "ayanamsha_value",
-    "ayanamsha",
     "planet_position",
+    "planet_longitude",
+    "houses",
 ]

@@ -47,21 +47,20 @@ def test_whole_sign_aries_ascendant():
 
     houses = whole_sign_houses(10.0)
 
-    assert houses[1].sign == ZodiacSign.ARIES.value
+    assert houses[1].sign == ZodiacSign.ARIES.display_name
     assert houses[1].sign_number == ZodiacSign.ARIES.number
-    assert houses[2].sign == ZodiacSign.TAURUS.value
-    assert houses[12].sign == ZodiacSign.PISCES.value
-
+    assert houses[2].sign == ZodiacSign.TAURUS.display_name
+    assert houses[12].sign == ZodiacSign.PISCES.display_name
 
 def test_whole_sign_cancer_ascendant():
     """Cancer Ascendant should produce Cancer as first house."""
 
     houses = whole_sign_houses(100.0)
 
-    assert houses[1].sign == ZodiacSign.CANCER.value
-    assert houses[4].sign == ZodiacSign.LIBRA.value
-    assert houses[7].sign == ZodiacSign.CAPRICORN.value
-    assert houses[10].sign == ZodiacSign.ARIES.value
+    assert houses[1].sign == ZodiacSign.CANCER.display_name
+    assert houses[4].sign == ZodiacSign.LIBRA.display_name
+    assert houses[7].sign == ZodiacSign.CAPRICORN.display_name
+    assert houses[10].sign == ZodiacSign.ARIES.display_name
 
 
 def test_whole_sign_wraparound():
@@ -69,10 +68,10 @@ def test_whole_sign_wraparound():
 
     houses = whole_sign_houses(350.0)
 
-    assert houses[1].sign == ZodiacSign.PISCES.value
-    assert houses[2].sign == ZodiacSign.ARIES.value
-    assert houses[3].sign == ZodiacSign.TAURUS.value
-    assert houses[12].sign == ZodiacSign.AQUARIUS.value
+    assert houses[1].sign == ZodiacSign.PISCES.display_name
+    assert houses[2].sign == ZodiacSign.ARIES.display_name
+    assert houses[3].sign == ZodiacSign.TAURUS.display_name
+    assert houses[12].sign == ZodiacSign.AQUARIUS.display_name
 
 
 def test_whole_sign_house_longitudes():
