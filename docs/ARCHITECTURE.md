@@ -1,7 +1,5 @@
 # Kundali Engine Architecture
 
-Version: 2.2
-
 ---
 
 # Vision

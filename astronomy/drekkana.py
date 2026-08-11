@@ -4,10 +4,10 @@ Drekkana (D3).
 According to the classical Parasara system.
 
 Python Version:
-    3.9+
+3.9+
 
 Author:
-    Kundali Engine
+Kundali Engine
 """
 
 from __future__ import annotations
@@ -25,19 +25,38 @@ def drekkana(
     Parameters
     ----------
     longitude
-        Sidereal longitude.
+        Sidereal longitude in degrees.
 
     Returns
     -------
     VargaPosition
         Drekkana position.
+
+    Notes
+    -----
+    Classical Parashari Drekkana divides every zodiac sign
+    into three equal parts of 10 degrees.
+
+    First Drekkana:
+        Same sign as the birth sign.
+
+    Second Drekkana:
+        Fifth sign from the birth sign.
+
+    Third Drekkana:
+        Ninth sign from the birth sign.
+
+    Longitudes are normalized modulo 360 degrees before
+    calculating the zodiac sign.
     """
 
-    sign_number = int(longitude // 30) + 1
+    longitude %= 360.0
 
-    degree = longitude % 30
+    sign_number = int(longitude // 30.0) + 1
 
-    part = int(degree // 10)
+    degree = longitude % 30.0
+
+    part = int(degree // 10.0)
 
     if part == 0:
         target = sign_number
@@ -48,9 +67,11 @@ def drekkana(
     else:
         target = ((sign_number + 8 - 1) % 12) + 1
 
+    degree_in_sign = (degree % 10.0) * 3.0
+
     return VargaPosition(
         sign=sign_from_number(target),
-        degree_in_sign=(degree % 10.0) * 3.0,
+        degree_in_sign=degree_in_sign,
     )
 
 
