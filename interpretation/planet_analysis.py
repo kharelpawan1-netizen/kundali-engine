@@ -17,6 +17,14 @@ Design principle:
     Calculation engine -> factual chart data
     Interpretation layer -> Vedic meaning
 
+This module does not:
+    - calculate planetary positions
+    - calculate houses
+    - calculate dignity
+    - detect Yogas
+    - calculate Dashas
+    - generate deterministic predictions
+
 Compatible with Python 3.9.
 """
 
@@ -93,6 +101,10 @@ PLANETS = [
 ]
 
 
+VALID_HOUSES = range(1, 13)
+VALID_PADAS = range(1, 5)
+
+
 # ============================================================
 # DATA MODEL
 # ============================================================
@@ -134,20 +146,37 @@ def _normalize_sign(sign: Any) -> str:
     """
 
     if sign is None:
-        raise ValueError("Planet sign cannot be None.")
+        raise ValueError(
+            "Planet sign cannot be None."
+        )
 
     text = str(sign).strip()
 
+    if not text:
+        raise ValueError(
+            "Planet sign cannot be empty."
+        )
+
+    normalized = text.lower()
+
     for sign_name in SIGNS:
-        if text.lower() == sign_name.lower():
+
+        canonical = sign_name.lower()
+
+        if normalized == canonical:
             return sign_name
 
-        if text.lower() == sign_name.lower().replace(" ", "_"):
+        if normalized == canonical.replace(
+            " ",
+            "_",
+        ):
             return sign_name
 
-    # Handle enum-style representations.
+    # Handle enum-style representations such as:
+    # ZodiacSign.SAGITTARIUS
     for sign_name in SIGNS:
-        if sign_name.lower() in text.lower():
+
+        if sign_name.lower() in normalized:
             return sign_name
 
     raise ValueError(
@@ -158,16 +187,31 @@ def _normalize_sign(sign: Any) -> str:
 def _planet_name(planet: Any) -> str:
     """Extract a canonical planet name."""
 
-    name = getattr(planet, "name", planet)
+    name = getattr(
+        planet,
+        "name",
+        planet,
+    )
 
     text = str(name).strip()
 
-    for candidate in PLANETS:
-        if text.lower() == candidate.lower():
-            return candidate
+    if not text:
+        raise ValueError(
+            "Planet name cannot be empty."
+        )
+
+    normalized = text.lower()
 
     for candidate in PLANETS:
-        if candidate.lower() in text.lower():
+
+        if normalized == candidate.lower():
+            return candidate
+
+    # Handle enum-style representations such as:
+    # Planet.MARS
+    for candidate in PLANETS:
+
+        if candidate.lower() in normalized:
             return candidate
 
     raise ValueError(
@@ -175,16 +219,107 @@ def _planet_name(planet: Any) -> str:
     )
 
 
+def _validate_house(
+    house: Any,
+) -> int:
+    """
+    Validate and normalize a house number.
+
+    Houses are strictly 1 through 12.
+    """
+
+    try:
+        normalized = int(house)
+
+    except (TypeError, ValueError) as exc:
+
+        raise ValueError(
+            f"Invalid house number: {house!r}"
+        ) from exc
+
+    if normalized not in VALID_HOUSES:
+        raise ValueError(
+            "House must be between 1 and 12."
+        )
+
+    return normalized
+
+
+def _validate_sign_degree(
+    degree: Any,
+) -> float:
+    """
+    Validate a planetary degree within a zodiac sign.
+
+    A sign-local degree must satisfy:
+
+        0 <= degree < 30
+    """
+
+    try:
+        normalized = float(degree)
+
+    except (TypeError, ValueError) as exc:
+
+        raise ValueError(
+            f"Invalid sign degree: {degree!r}"
+        ) from exc
+
+    if not 0.0 <= normalized < 30.0:
+        raise ValueError(
+            "sign_degree must be between "
+            "0.0 inclusive and 30.0 exclusive."
+        )
+
+    return normalized
+
+
+def _validate_pada(
+    pada: Any,
+) -> Optional[int]:
+    """
+    Validate a Nakshatra pada.
+
+    A pada is optional because some calculation layers may
+    not expose Nakshatra information.
+    """
+
+    if pada is None:
+        return None
+
+    try:
+        normalized = int(pada)
+
+    except (TypeError, ValueError) as exc:
+
+        raise ValueError(
+            f"Invalid Nakshatra pada: {pada!r}"
+        ) from exc
+
+    if normalized not in VALID_PADAS:
+        raise ValueError(
+            "Nakshatra pada must be between 1 and 4."
+        )
+
+    return normalized
+
+
 # ============================================================
 # SIGN / HOUSE UTILITIES
 # ============================================================
 
-def sign_index(sign: str) -> int:
+def sign_index(
+    sign: str,
+) -> int:
     """Return zero-based zodiac index."""
 
-    sign = _normalize_sign(sign)
+    normalized = _normalize_sign(
+        sign
+    )
 
-    return SIGNS.index(sign)
+    return SIGNS.index(
+        normalized
+    )
 
 
 def house_from_sign(
@@ -217,10 +352,9 @@ def sign_for_house(
 ) -> str:
     """Return the zodiac sign occupying a whole-sign house."""
 
-    if not 1 <= house <= 12:
-        raise ValueError(
-            "House must be between 1 and 12."
-        )
+    house = _validate_house(
+        house
+    )
 
     asc_index = sign_index(
         ascendant_sign
@@ -246,7 +380,9 @@ def house_lord(
         house,
     )
 
-    return SIGN_LORDS[sign]
+    return SIGN_LORDS[
+        sign
+    ]
 
 
 def planetary_lordships(
@@ -256,25 +392,32 @@ def planetary_lordships(
     """
     Return houses owned by a planet.
 
-    Rahu/Ketu have no classical sign ownership in this
-    basic Parashari layer.
+    Rahu and Ketu have no classical Parashari sign ownership
+    in this foundational interpretation layer.
     """
 
-    planet = _planet_name(planet)
+    planet = _planet_name(
+        planet
+    )
 
-    if planet in {"Rahu", "Ketu"}:
+    if planet in {
+        "Rahu",
+        "Ketu",
+    }:
         return []
 
     houses = []
 
-    for house in range(1, 13):
+    for house in VALID_HOUSES:
 
         if house_lord(
             ascendant_sign,
             house,
         ) == planet:
 
-            houses.append(house)
+            houses.append(
+                house
+            )
 
     return houses
 
@@ -286,9 +429,23 @@ def planetary_lordships(
 def natural_planet_type(
     planet: str,
 ) -> str:
-    """Return natural benefic/malefic classification."""
+    """
+    Return the foundational natural benefic/malefic
+    classification.
 
-    planet = _planet_name(planet)
+    This is intentionally simplified.
+
+    A future advanced layer may refine:
+        - Moon waxing/waning condition
+        - Mercury association
+        - combustion
+        - conjunction-based modification
+        - other classical contextual factors
+    """
+
+    planet = _planet_name(
+        planet
+    )
 
     if planet in NATURAL_BENEFICS:
         return "benefic"
@@ -308,58 +465,97 @@ def functional_planet_type(
     planet: str,
 ) -> str:
     """
-    Determine a basic Parashari functional classification.
+    Determine a foundational Parashari functional classification.
 
-    This is intentionally conservative.
+    This classification is deliberately conservative.
 
-    The module does not yet attempt complete yoga-based
-    functional judgment. That belongs in yoga_analysis.py.
+    It is not a complete assessment of:
+        - Yogakaraka status
+        - planetary strength
+        - association
+        - dignity
+        - combustion
+        - retrogression
+        - aspects
+        - Shadbala
+        - Yoga formation
+
+    Those belong to their respective interpretation layers.
     """
 
-    planet = _planet_name(planet)
+    ascendant_sign = _normalize_sign(
+        ascendant_sign
+    )
+
+    planet = _planet_name(
+        planet
+    )
 
     houses = planetary_lordships(
         ascendant_sign,
         planet,
     )
 
-    # Nodes are handled separately later.
-    if planet in {"Rahu", "Ketu"}:
+    # Nodes are handled separately because classical
+    # Parashari sign ownership is not assigned to them here.
+    if planet in {
+        "Rahu",
+        "Ketu",
+    }:
         return "node"
 
     # Lagna lord receives a strong functional benefic bias.
     if 1 in houses:
         return "functional_benefic"
 
-    # Lords of trikonas.
+    # Lords of the 5th or 9th have strong trinal
+    # functional benefic significance.
     if any(
         house in houses
-        for house in (5, 9)
+        for house in (
+            5,
+            9,
+        )
     ):
         return "functional_benefic"
 
-    # Strong dusthana ownership.
+    # Dusthana ownership is treated as functionally
+    # challenging in this foundational layer.
     if any(
         house in houses
-        for house in (6, 8, 12)
+        for house in (
+            6,
+            8,
+            12,
+        )
     ):
         return "functional_malefic"
 
-    # 2nd and 11th are wealth-related but not pure trikonas.
+    # 2nd and 11th are wealth-related houses and require
+    # contextual interpretation rather than being classified
+    # as inherently benefic or malefic here.
     if any(
         house in houses
-        for house in (2, 11)
+        for house in (
+            2,
+            11,
+        )
     ):
         return "conditional"
 
-    # 3rd is generally treated as functionally challenging.
+    # The 3rd is generally treated as functionally
+    # challenging in this foundational classification.
     if 3 in houses:
         return "functional_malefic"
 
-    # 4th and 7th require contextual judgment.
+    # Kendra lordship, especially 4th and 7th, requires
+    # contextual judgment and is therefore left conditional.
     if any(
         house in houses
-        for house in (4, 7)
+        for house in (
+            4,
+            7,
+        )
     ):
         return "conditional"
 
@@ -376,9 +572,9 @@ def _extract_dignity(
     """
     Extract dignity if the calculation layer exposes it.
 
-    The interpretation layer deliberately does not calculate
-    dignity itself yet. Existing dignity calculations remain
-    the source of truth.
+    The interpretation layer does not calculate dignity.
+
+    Existing dignity calculations remain the source of truth.
     """
 
     dignity = getattr(
@@ -390,7 +586,14 @@ def _extract_dignity(
     if dignity is None:
         return None
 
-    return str(dignity)
+    text = str(
+        dignity
+    ).strip()
+
+    if not text:
+        return None
+
+    return text
 
 
 # ============================================================
@@ -504,8 +707,18 @@ def interpret_planet(
     No prediction is generated here.
 
     This function creates evidence that later synthesis
-    modules can use.
+    and specialized interpretation modules can use.
     """
+
+    if chart is None:
+        raise ValueError(
+            "chart must not be None."
+        )
+
+    if planet is None:
+        raise ValueError(
+            "planet must not be None."
+        )
 
     ascendant = getattr(
         chart,
@@ -526,20 +739,27 @@ def interpret_planet(
     )
 
     if asc_sign_obj is not None:
+
         ascendant_sign = _normalize_sign(
             asc_sign_obj
         )
+
     else:
+
         # The existing astronomy layer normally exposes
-        # sign_enum(), but keep this module independent.
+        # sign_enum(), but keep this module independent
+        # from calculation implementation details.
         try:
             from astronomy.signs import sign_enum
 
             ascendant_sign = _normalize_sign(
-                sign_enum(ascendant)
+                sign_enum(
+                    ascendant
+                )
             )
 
         except Exception as exc:
+
             raise ValueError(
                 "Unable to determine Ascendant sign."
             ) from exc
@@ -556,21 +776,26 @@ def interpret_planet(
         )
     )
 
-    house = getattr(
+    raw_house = getattr(
         planet,
         "house",
         None,
     )
 
-    if house is None:
+    if raw_house is None:
+
         house = house_from_sign(
             ascendant_sign,
             sign,
         )
 
-    house = int(house)
+    else:
 
-    degree = float(
+        house = _validate_house(
+            raw_house
+        )
+
+    degree = _validate_sign_degree(
         getattr(
             planet,
             "sign_degree",
@@ -585,18 +810,21 @@ def interpret_planet(
     )
 
     if nakshatra is not None:
+
         nakshatra = str(
             nakshatra
+        ).strip()
+
+        if not nakshatra:
+            nakshatra = None
+
+    pada = _validate_pada(
+        getattr(
+            planet,
+            "pada",
+            None,
         )
-
-    pada = getattr(
-        planet,
-        "pada",
-        None,
     )
-
-    if pada is not None:
-        pada = int(pada)
 
     lordships = planetary_lordships(
         ascendant_sign,
@@ -624,7 +852,9 @@ def interpret_planet(
     )
 
     themes = [
-        HOUSE_THEMES[house]
+        HOUSE_THEMES[
+            house
+        ]
     ]
 
     evidence = []
@@ -634,6 +864,7 @@ def interpret_planet(
     )
 
     if lordships:
+
         formatted = ", ".join(
             str(house_number)
             for house_number in lordships
@@ -644,6 +875,7 @@ def interpret_planet(
         )
 
     if is_lagna_lord:
+
         evidence.append(
             f"{name} is the Lagna lord."
         )
@@ -658,12 +890,16 @@ def interpret_planet(
     )
 
     if nakshatra:
+
         if pada is not None:
+
             evidence.append(
                 f"Nakshatra: {nakshatra}, "
                 f"Pada {pada}."
             )
+
         else:
+
             evidence.append(
                 f"Nakshatra: {nakshatra}."
             )
@@ -673,6 +909,7 @@ def interpret_planet(
     )
 
     if dignity:
+
         evidence.append(
             f"Recorded dignity: {dignity}."
         )
@@ -713,6 +950,11 @@ def analyze_planets(
         }
     """
 
+    if chart is None:
+        raise ValueError(
+            "chart must not be None."
+        )
+
     planets = getattr(
         chart,
         "planets",
@@ -722,6 +964,14 @@ def analyze_planets(
     if planets is None:
         raise ValueError(
             "Chart does not expose planets."
+        )
+
+    if not hasattr(
+        planets,
+        "values",
+    ):
+        raise ValueError(
+            "Chart planets must be a mapping."
         )
 
     results = {}
@@ -788,6 +1038,10 @@ def planet_analysis_report(
 
     return report
 
+
+# ============================================================
+# PUBLIC API
+# ============================================================
 
 __all__ = [
     "PlanetInterpretation",

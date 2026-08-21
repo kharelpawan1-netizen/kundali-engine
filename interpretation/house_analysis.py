@@ -17,6 +17,11 @@ Primary principles:
     - Occupant placement
     - Evidence-first interpretation
 
+Important architectural rule:
+    This module records structural and interpretive evidence.
+    It does not convert a house placement into a deterministic
+    prediction.
+
 Compatible with Python 3.9.
 """
 
@@ -53,7 +58,6 @@ HOUSE_SIGNIFICATIONS = {
         "self-direction",
         "life orientation",
     ],
-
     2: [
         "wealth",
         "savings",
@@ -63,7 +67,6 @@ HOUSE_SIGNIFICATIONS = {
         "values",
         "accumulated resources",
     ],
-
     3: [
         "courage",
         "initiative",
@@ -74,7 +77,6 @@ HOUSE_SIGNIFICATIONS = {
         "short journeys",
         "self-effort",
     ],
-
     4: [
         "mother",
         "home",
@@ -85,7 +87,6 @@ HOUSE_SIGNIFICATIONS = {
         "inner peace",
         "land",
     ],
-
     5: [
         "intelligence",
         "education",
@@ -96,7 +97,6 @@ HOUSE_SIGNIFICATIONS = {
         "speculation",
         "purva punya",
     ],
-
     6: [
         "service",
         "employment",
@@ -107,7 +107,6 @@ HOUSE_SIGNIFICATIONS = {
         "obstacles",
         "daily work",
     ],
-
     7: [
         "marriage",
         "spouse",
@@ -117,7 +116,6 @@ HOUSE_SIGNIFICATIONS = {
         "public dealings",
         "foreign interaction",
     ],
-
     8: [
         "longevity",
         "transformation",
@@ -128,7 +126,6 @@ HOUSE_SIGNIFICATIONS = {
         "occult subjects",
         "joint resources",
     ],
-
     9: [
         "dharma",
         "fortune",
@@ -140,7 +137,6 @@ HOUSE_SIGNIFICATIONS = {
         "ethics",
         "blessings",
     ],
-
     10: [
         "career",
         "profession",
@@ -151,7 +147,6 @@ HOUSE_SIGNIFICATIONS = {
         "government",
         "public contribution",
     ],
-
     11: [
         "income",
         "gains",
@@ -162,7 +157,6 @@ HOUSE_SIGNIFICATIONS = {
         "fulfillment",
         "large organizations",
     ],
-
     12: [
         "expenses",
         "foreign lands",
@@ -228,6 +222,35 @@ class HouseInterpretation:
 
 
 # ============================================================
+# VALIDATION
+# ============================================================
+
+def _validate_house(
+    house: int,
+) -> int:
+    """
+    Validate and normalize a house number.
+
+    Keeping validation in one place prevents different helpers
+    from silently applying different house rules.
+    """
+
+    try:
+        normalized = int(house)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "house must be an integer between 1 and 12."
+        ) from exc
+
+    if not 1 <= normalized <= 12:
+        raise ValueError(
+            "house must be between 1 and 12."
+        )
+
+    return normalized
+
+
+# ============================================================
 # HOUSE CATEGORY
 # ============================================================
 
@@ -237,12 +260,15 @@ def house_categories(
     """
     Return classical structural categories applicable
     to a house.
+
+    These are structural classifications only. They do not
+    independently determine whether a house will produce
+    favorable or unfavorable results.
     """
 
-    if not 1 <= house <= 12:
-        raise ValueError(
-            "house must be between 1 and 12."
-        )
+    house = _validate_house(
+        house
+    )
 
     categories = []
 
@@ -282,16 +308,22 @@ def find_house_lord_planet(
     house: int,
 ) -> Optional[PlanetContext]:
     """
-    Find the planet that owns the sign of a house.
+    Find the normalized planet that owns the sign of a house.
 
-    Rahu/Ketu are not assigned classical Parashari
-    sign ownership here.
+    Classical Parashari sign ownership is used.
+
+    Rahu and Ketu are not assigned classical sign ownership
+    by this interpretation layer.
     """
 
-    if not 1 <= house <= 12:
+    if context is None:
         raise ValueError(
-            "house must be between 1 and 12."
+            "context must not be None."
         )
+
+    house = _validate_house(
+        house
+    )
 
     lord = house_lord(
         context.ascendant_sign,
@@ -300,7 +332,10 @@ def find_house_lord_planet(
 
     for planet in context.planets.values():
 
-        if planet.name.lower() == lord.lower():
+        if (
+            planet.name.strip().lower()
+            == lord.strip().lower()
+        ):
             return planet
 
     return None
@@ -314,12 +349,21 @@ def occupants_of_house(
     context: InterpretationContext,
     house: int,
 ) -> List[PlanetContext]:
-    """Return planets occupying a house."""
+    """
+    Return all normalized planetary occupants of a house.
 
-    if not 1 <= house <= 12:
+    The normalized context is the source of truth for house
+    occupancy. No independent planetary calculation occurs here.
+    """
+
+    if context is None:
         raise ValueError(
-            "house must be between 1 and 12."
+            "context must not be None."
         )
+
+    house = _validate_house(
+        house
+    )
 
     return [
         planet
@@ -329,87 +373,23 @@ def occupants_of_house(
 
 
 # ============================================================
-# HOUSE INTERPRETATION
+# HOUSE THEMES
 # ============================================================
 
-def interpret_house(
-    context: InterpretationContext,
+def _house_themes(
     house: int,
-) -> HouseInterpretation:
+    categories: List[str],
+) -> List[str]:
     """
-    Build an evidence-oriented Parashari interpretation
-    of one house.
+    Build structural themes for a house.
 
-    This function does not make deterministic predictions.
-
-    It identifies:
-        - house sign
-        - house lord
-        - house categories
-        - occupants
-        - lord placement
-        - natural nature
-        - functional nature
-        - interpretive themes
-        - evidence
+    These themes describe interpretive domains and are not
+    predictions.
     """
 
-    if not 1 <= house <= 12:
-        raise ValueError(
-            "house must be between 1 and 12."
-        )
-
-    sign = sign_for_house(
-        context.ascendant_sign,
-        house,
-    )
-
-    lord = house_lord(
-        context.ascendant_sign,
-        house,
-    )
-
-    significations = list(
-        HOUSE_SIGNIFICATIONS[house]
-    )
-
-    occupants = occupants_of_house(
-        context,
-        house,
-    )
-
-    lord_planet = find_house_lord_planet(
-        context,
-        house,
-    )
-
-    categories = house_categories(
-        house
-    )
-
-    natural_types = {}
-    functional_types = {}
-
-    for planet in occupants:
-
-        natural_types[
-            planet.name
-        ] = natural_planet_type(
-            planet.name
-        )
-
-        functional_types[
-            planet.name
-        ] = functional_planet_type(
-            context.ascendant_sign,
-            planet.name,
-        )
-
-    themes = []
-
-    themes.append(
+    themes = [
         HOUSE_THEMES[house]
-    )
+    ]
 
     if "kendra" in categories:
         themes.append(
@@ -446,6 +426,184 @@ def interpret_house(
             "emotional depth, release and inner development"
         )
 
+    return themes
+
+
+# ============================================================
+# OCCUPANT EVIDENCE
+# ============================================================
+
+def _occupant_evidence(
+    house: int,
+    occupants: List[PlanetContext],
+    natural_types: Dict[str, str],
+    functional_types: Dict[str, str],
+) -> List[str]:
+    """
+    Generate evidence statements for house occupants.
+
+    This function deliberately records facts and classifications
+    without making deterministic predictions.
+    """
+
+    evidence = []
+
+    if not occupants:
+        evidence.append(
+            "No classical planet occupies this house."
+        )
+        return evidence
+
+    names = ", ".join(
+        planet.name
+        for planet in occupants
+    )
+
+    evidence.append(
+        f"Occupying planets: {names}."
+    )
+
+    for planet in occupants:
+
+        evidence.append(
+            f"{planet.name} occupies house {house} "
+            f"from {planet.sign}."
+        )
+
+        evidence.append(
+            f"{planet.name} is naturally "
+            f"{natural_types[planet.name]}."
+        )
+
+        evidence.append(
+            f"{planet.name} has "
+            f"{functional_types[planet.name]} "
+            f"functional classification."
+        )
+
+    return evidence
+
+
+# ============================================================
+# HOUSE LORD EVIDENCE
+# ============================================================
+
+def _lord_evidence(
+    house: int,
+    lord: str,
+    lord_planet: Optional[PlanetContext],
+) -> List[str]:
+    """
+    Generate evidence statements concerning house lord
+    placement.
+    """
+
+    if lord_planet is None:
+        return [
+            f"The house lord {lord} "
+            f"is not available in the normalized planet set."
+        ]
+
+    return [
+        f"The house lord {lord_planet.name} "
+        f"is placed in house {lord_planet.house} "
+        f"in {lord_planet.sign}."
+    ]
+
+
+# ============================================================
+# HOUSE INTERPRETATION
+# ============================================================
+
+def interpret_house(
+    context: InterpretationContext,
+    house: int,
+) -> HouseInterpretation:
+    """
+    Build an evidence-oriented Parashari interpretation
+    of one house.
+
+    This function does not make deterministic predictions.
+
+    It identifies:
+        - house sign
+        - house lord
+        - house categories
+        - occupants
+        - lord placement
+        - natural nature
+        - functional nature
+        - interpretive themes
+        - evidence
+    """
+
+    if context is None:
+        raise ValueError(
+            "context must not be None."
+        )
+
+    house = _validate_house(
+        house
+    )
+
+    sign = sign_for_house(
+        context.ascendant_sign,
+        house,
+    )
+
+    lord = house_lord(
+        context.ascendant_sign,
+        house,
+    )
+
+    significations = list(
+        HOUSE_SIGNIFICATIONS[house]
+    )
+
+    occupants = occupants_of_house(
+        context,
+        house,
+    )
+
+    lord_planet = find_house_lord_planet(
+        context,
+        house,
+    )
+
+    categories = house_categories(
+        house
+    )
+
+    natural_types: Dict[
+        str,
+        str,
+    ] = {}
+
+    functional_types: Dict[
+        str,
+        str,
+    ] = {}
+
+    for planet in occupants:
+
+        natural_types[
+            planet.name
+        ] = natural_planet_type(
+            planet.name
+        )
+
+        functional_types[
+            planet.name
+        ] = functional_planet_type(
+            context.ascendant_sign,
+            planet.name,
+        )
+
+    themes = _house_themes(
+        house,
+        categories,
+    )
+
     evidence = []
 
     evidence.append(
@@ -463,55 +621,22 @@ def interpret_house(
             + "."
         )
 
-    if occupants:
-
-        names = ", ".join(
-            planet.name
-            for planet in occupants
+    evidence.extend(
+        _occupant_evidence(
+            house,
+            occupants,
+            natural_types,
+            functional_types,
         )
+    )
 
-        evidence.append(
-            f"Occupying planets: {names}."
+    evidence.extend(
+        _lord_evidence(
+            house,
+            lord,
+            lord_planet,
         )
-
-        for planet in occupants:
-
-            evidence.append(
-                f"{planet.name} occupies house {house} "
-                f"from {planet.sign}."
-            )
-
-            evidence.append(
-                f"{planet.name} is naturally "
-                f"{natural_types[planet.name]}."
-            )
-
-            evidence.append(
-                f"{planet.name} has "
-                f"{functional_types[planet.name]} "
-                f"functional classification."
-            )
-
-    else:
-
-        evidence.append(
-            "No classical planet occupies this house."
-        )
-
-    if lord_planet is not None:
-
-        evidence.append(
-            f"The house lord {lord_planet.name} "
-            f"is placed in house {lord_planet.house} "
-            f"in {lord_planet.sign}."
-        )
-
-    else:
-
-        evidence.append(
-            f"The house lord {lord} "
-            f"is not available in the normalized planet set."
-        )
+    )
 
     return HouseInterpretation(
         house=house,
@@ -554,9 +679,19 @@ def analyze_houses(
 ) -> Dict[int, HouseInterpretation]:
     """
     Analyze all twelve houses.
+
+    The returned mapping is indexed by house number.
     """
 
-    results = {}
+    if context is None:
+        raise ValueError(
+            "context must not be None."
+        )
+
+    results: Dict[
+        int,
+        HouseInterpretation,
+    ] = {}
 
     for house in range(1, 13):
 
@@ -575,7 +710,15 @@ def analyze_houses(
 def occupied_houses(
     context: InterpretationContext,
 ) -> List[int]:
-    """Return houses containing one or more planets."""
+    """
+    Return houses containing one or more normalized
+    planetary occupants.
+    """
+
+    if context is None:
+        raise ValueError(
+            "context must not be None."
+        )
 
     return sorted(
         {
@@ -589,7 +732,17 @@ def occupied_houses(
 def empty_houses(
     context: InterpretationContext,
 ) -> List[int]:
-    """Return houses without classical planetary occupants."""
+    """
+    Return houses without recorded planetary occupants.
+
+    An empty house is not interpreted as an inactive or weak
+    house. Its lord and other relevant factors remain important.
+    """
+
+    if context is None:
+        raise ValueError(
+            "context must not be None."
+        )
 
     occupied = set(
         occupied_houses(context)
@@ -613,9 +766,20 @@ def house_lord_placements(
     Return:
 
         house -> house where its lord is placed
+
+    ``None`` indicates that the house lord is not available
+    in the normalized planetary context.
     """
 
-    placements = {}
+    if context is None:
+        raise ValueError(
+            "context must not be None."
+        )
+
+    placements: Dict[
+        int,
+        Optional[int],
+    ] = {}
 
     for house in range(1, 13):
 
@@ -646,6 +810,11 @@ def house_analysis_report(
     This is evidence-oriented and intentionally avoids
     deterministic future prediction.
     """
+
+    if context is None:
+        raise ValueError(
+            "context must not be None."
+        )
 
     analyses = analyze_houses(
         context

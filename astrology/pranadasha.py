@@ -40,6 +40,13 @@ from astrology.sookshmadasha import (
 
 
 # ============================================================
+# Constants
+# ============================================================
+
+DAYS_PER_YEAR = 365.25
+
+
+# ============================================================
 # Data Model
 # ============================================================
 
@@ -63,7 +70,7 @@ class PranaDasha:
 
     @property
     def duration_days(self) -> float:
-        """Return the duration in days."""
+        """Return the duration of the period in days."""
 
         return (
             self.end - self.start
@@ -73,7 +80,7 @@ class PranaDasha:
     def duration_years(self) -> float:
         """Return the duration in Vimshottari years."""
 
-        return self.duration_days / 365.25
+        return self.duration_days / DAYS_PER_YEAR
 
     def contains(
         self,
@@ -82,6 +89,9 @@ class PranaDasha:
         """
         Return True if the supplied moment falls
         inside this Prana Dasha.
+
+        The start boundary is inclusive and the end
+        boundary is exclusive.
         """
 
         return (
@@ -97,8 +107,8 @@ def _validate_sookshmadasha(
     sookshmadasha: SookshmaDasha,
 ) -> None:
     """
-    Validate that the supplied object is a
-    SookshmaDasha instance.
+    Validate a SookshmaDasha instance and its
+    temporal boundaries.
     """
 
     if not isinstance(
@@ -110,15 +120,100 @@ def _validate_sookshmadasha(
             "SookshmaDasha instance."
         )
 
+    if not isinstance(
+        sookshmadasha.start,
+        datetime,
+    ):
+        raise TypeError(
+            "sookshmadasha.start must be a datetime."
+        )
+
+    if not isinstance(
+        sookshmadasha.end,
+        datetime,
+    ):
+        raise TypeError(
+            "sookshmadasha.end must be a datetime."
+        )
+
+    if sookshmadasha.end <= sookshmadasha.start:
+        raise ValueError(
+            "Sookshma Dasha end must be later than "
+            "Sookshma Dasha start."
+        )
+
+    if (
+        sookshmadasha.start.tzinfo is None
+        and sookshmadasha.end.tzinfo is not None
+    ) or (
+        sookshmadasha.start.tzinfo is not None
+        and sookshmadasha.end.tzinfo is None
+    ):
+        raise ValueError(
+            "Sookshma Dasha start and end must both be "
+            "timezone-naive or both be timezone-aware."
+        )
+
 
 def _validate_planet(
     planet: str,
 ) -> None:
     """Validate a Vimshottari planet."""
 
-    if planet not in DASHA_SEQUENCE:
+    if not isinstance(
+        planet,
+        str,
+    ):
+        raise TypeError(
+            "Vimshottari planet must be a string."
+        )
+
+    if planet not in DASHA_YEARS:
         raise ValueError(
             f"Unknown Vimshottari planet: {planet}"
+        )
+
+
+def _validate_moment_against_period(
+    moment: datetime,
+    start: datetime,
+    end: datetime,
+) -> None:
+    """
+    Validate that a datetime has compatible timezone
+    awareness with the parent Dasha period.
+    """
+
+    if not isinstance(
+        moment,
+        datetime,
+    ):
+        raise TypeError(
+            "moment must be a datetime."
+        )
+
+    if (
+        moment.tzinfo is None
+        and start.tzinfo is not None
+    ) or (
+        moment.tzinfo is not None
+        and start.tzinfo is None
+    ):
+        raise ValueError(
+            "moment timezone-awareness must match "
+            "the parent Sookshma Dasha."
+        )
+
+    if (
+        moment.tzinfo is None
+        and end.tzinfo is not None
+    ) or (
+        moment.tzinfo is not None
+        and end.tzinfo is None
+    ):
+        raise ValueError(
+            "moment timezone-awareness must match "
+            "the parent Sookshma Dasha."
         )
 
 
@@ -176,7 +271,7 @@ def _years_to_days(
     matching the existing Dasha implementation.
     """
 
-    return years * 365.25
+    return years * DAYS_PER_YEAR
 
 
 # ============================================================
@@ -195,7 +290,9 @@ def prana_duration_years(
         Prana duration =
             Sookshma duration
             ×
-            Prana lord years / 120
+            Prana lord years
+            /
+            120
 
     The Sookshma Dasha duration is measured
     in Vimshottari years.
@@ -209,13 +306,13 @@ def prana_duration_years(
         prana_lord
     )
 
-    sd_duration_years = (
+    sookshma_duration_years = (
         sookshmadasha.duration_days
-        / 365.25
+        / DAYS_PER_YEAR
     )
 
     return (
-        sd_duration_years
+        sookshma_duration_years
         * DASHA_YEARS[prana_lord]
         / VIMSHOTTARI_TOTAL_YEARS
     )
@@ -253,41 +350,30 @@ def generate_pranadashas(
         sookshmadasha.start
     )
 
+    parent_duration_days = (
+        sookshmadasha.end
+        - sookshmadasha.start
+    ).total_seconds() / 86400.0
+
     for index, lord in enumerate(
         sequence
     ):
 
-        # ----------------------------------------------------
-        # Calculate duration
-        # ----------------------------------------------------
-
-        duration_years = (
-            prana_duration_years(
-                sookshmadasha,
-                lord,
-            )
+        fraction = (
+            DASHA_YEARS[lord]
+            / VIMSHOTTARI_TOTAL_YEARS
         )
 
-        duration_days = _years_to_days(
-            duration_years
+        duration_days = (
+            parent_duration_days
+            * fraction
         )
-
-        # ----------------------------------------------------
-        # Last period correction
-        # ----------------------------------------------------
-        #
-        # The final Prana Dasha must end exactly
-        # at the parent Sookshma Dasha end.
-        #
 
         if index == len(sequence) - 1:
-
             current_end = (
                 sookshmadasha.end
             )
-
         else:
-
             current_end = (
                 current_start
                 + timedelta(
@@ -353,38 +439,32 @@ def current_pranadasha(
     )
 
     if moment is None:
-
         moment = datetime.now(
-            tz=sookshmadasha
-            .start
-            .tzinfo
+            tz=sookshmadasha.start.tzinfo
         )
 
-    # --------------------------------------------------------
-    # Validate moment against parent SD
-    # --------------------------------------------------------
+    _validate_moment_against_period(
+        moment,
+        sookshmadasha.start,
+        sookshmadasha.end,
+    )
 
     if not (
         sookshmadasha.start
         <= moment
         < sookshmadasha.end
     ):
-
         raise ValueError(
             "Requested moment falls outside "
             "the supplied Sookshma Dasha."
         )
 
-    periods = (
-        generate_pranadashas(
-            sookshmadasha
-        )
+    periods = generate_pranadashas(
+        sookshmadasha
     )
 
     for period in periods:
-
         if period.contains(moment):
-
             return period
 
     raise ValueError(
@@ -398,9 +478,7 @@ def current_pranadasha(
 # ============================================================
 
 def generate_all_pranadashas(
-    sookshmadashas: List[
-        SookshmaDasha
-    ],
+    sookshmadashas: List[SookshmaDasha],
 ) -> List[PranaDasha]:
     """
     Generate Prana Dashas for every supplied
@@ -420,10 +498,7 @@ def generate_all_pranadashas(
 
     periods: List[PranaDasha] = []
 
-    for sookshmadasha in (
-        sookshmadashas
-    ):
-
+    for sookshmadasha in sookshmadashas:
         periods.extend(
             generate_pranadashas(
                 sookshmadasha

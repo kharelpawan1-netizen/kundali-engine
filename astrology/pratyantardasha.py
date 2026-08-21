@@ -1,4 +1,3 @@
-
 """
 astrology/pratyantardasha.py
 
@@ -34,6 +33,13 @@ from astrology.dasha import (
 
 
 # ============================================================
+# Constants
+# ============================================================
+
+DAYS_PER_YEAR = 365.25
+
+
+# ============================================================
 # Data Model
 # ============================================================
 
@@ -62,18 +68,42 @@ class Pratyantardasha:
             self.end - self.start
         ).total_seconds() / 86400.0
 
-    def contains(self, moment: datetime) -> bool:
-        """Return True if moment falls inside this period."""
+    @property
+    def duration_years(self) -> float:
+        """Return the duration in Vimshottari years."""
 
-        return self.start <= moment < self.end
+        return self.duration_days / DAYS_PER_YEAR
+
+    def contains(
+        self,
+        moment: datetime,
+    ) -> bool:
+        """
+        Return True if the supplied moment falls
+        inside this period.
+
+        The start boundary is inclusive and the end
+        boundary is exclusive.
+        """
+
+        return (
+            self.start <= moment < self.end
+        )
 
 
 # ============================================================
 # Validation
 # ============================================================
 
-def _validate_planet(planet: str) -> None:
+def _validate_planet(
+    planet: str,
+) -> None:
     """Validate a Vimshottari planet."""
+
+    if not isinstance(planet, str):
+        raise TypeError(
+            "Vimshottari planet must be a string."
+        )
 
     if planet not in DASHA_YEARS:
         raise ValueError(
@@ -84,29 +114,120 @@ def _validate_planet(planet: str) -> None:
 def _validate_antardasha(
     antardasha: Antardasha,
 ) -> None:
-    """Validate an Antardasha instance."""
+    """
+    Validate an Antardasha instance and its
+    Vimshottari hierarchy.
+    """
 
-    if not isinstance(antardasha, Antardasha):
+    if not isinstance(
+        antardasha,
+        Antardasha,
+    ):
         raise TypeError(
             "antardasha must be an Antardasha instance."
         )
 
-    _validate_planet(antardasha.mahadasha_lord)
-    _validate_planet(antardasha.antardasha_lord)
+    _validate_planet(
+        antardasha.mahadasha_lord
+    )
+
+    _validate_planet(
+        antardasha.antardasha_lord
+    )
+
+    if not isinstance(
+        antardasha.start,
+        datetime,
+    ):
+        raise TypeError(
+            "antardasha.start must be a datetime."
+        )
+
+    if not isinstance(
+        antardasha.end,
+        datetime,
+    ):
+        raise TypeError(
+            "antardasha.end must be a datetime."
+        )
+
+    if antardasha.end <= antardasha.start:
+        raise ValueError(
+            "Antardasha end must be later than "
+            "Antardasha start."
+        )
+
+    if (
+        antardasha.start.tzinfo is None
+        and antardasha.end.tzinfo is not None
+    ) or (
+        antardasha.start.tzinfo is not None
+        and antardasha.end.tzinfo is None
+    ):
+        raise ValueError(
+            "Antardasha start and end must both be "
+            "timezone-naive or both be timezone-aware."
+        )
+
+
+def _validate_moment_against_period(
+    moment: datetime,
+    start: datetime,
+    end: datetime,
+) -> None:
+    """
+    Validate that a datetime can safely be compared
+    with the supplied period.
+    """
+
+    if not isinstance(moment, datetime):
+        raise TypeError(
+            "moment must be a datetime."
+        )
+
+    if (
+        moment.tzinfo is None
+        and start.tzinfo is not None
+    ) or (
+        moment.tzinfo is not None
+        and start.tzinfo is None
+    ):
+        raise ValueError(
+            "moment timezone-awareness must match "
+            "the parent Dasha period."
+        )
+
+    if (
+        moment.tzinfo is None
+        and end.tzinfo is not None
+    ) or (
+        moment.tzinfo is not None
+        and end.tzinfo is None
+    ):
+        raise ValueError(
+            "moment timezone-awareness must match "
+            "the parent Dasha period."
+        )
 
 
 # ============================================================
 # Date Utilities
 # ============================================================
 
-def years_to_days(years: float) -> float:
+def years_to_days(
+    years: float,
+) -> float:
     """
     Convert Vimshottari years to days.
 
-    Uses the same 365.25-day year convention as dasha.py.
+    Uses the same 365.25-day year convention as
+    astrology.dasha.
     """
 
-    if not isinstance(years, (int, float)):
+    if not isinstance(
+        years,
+        (int, float),
+    ):
         raise TypeError(
             "years must be numeric."
         )
@@ -116,7 +237,7 @@ def years_to_days(years: float) -> float:
             "years cannot be negative."
         )
 
-    return float(years) * 365.25
+    return float(years) * DAYS_PER_YEAR
 
 
 def add_years_fraction(
@@ -124,6 +245,14 @@ def add_years_fraction(
     years: float,
 ) -> datetime:
     """Add fractional Vimshottari years to a datetime."""
+
+    if not isinstance(
+        moment,
+        datetime,
+    ):
+        raise TypeError(
+            "moment must be a datetime."
+        )
 
     return moment + timedelta(
         days=years_to_days(years)
@@ -164,13 +293,24 @@ def pratyantardasha_duration_years(
         Duration in Vimshottari years.
     """
 
-    _validate_antardasha(antardasha)
-    _validate_planet(pratyantardasha_lord)
+    _validate_antardasha(
+        antardasha
+    )
+
+    _validate_planet(
+        pratyantardasha_lord
+    )
+
+    antardasha_duration_years = (
+        antardasha.duration_days
+        / DAYS_PER_YEAR
+    )
 
     return (
-        antardasha.duration_days
-        / 365.25
-        * DASHA_YEARS[pratyantardasha_lord]
+        antardasha_duration_years
+        * DASHA_YEARS[
+            pratyantardasha_lord
+        ]
         / VIMSHOTTARI_TOTAL_YEARS
     )
 
@@ -185,7 +325,7 @@ def pratyantardasha_sequence(
     """
     Return the nine Pratyantardasha lords.
 
-    The sequence begins with the Antardasha lord and then
+    The sequence begins with the Antardasha lord and
     follows the standard Vimshottari order.
 
     Example:
@@ -196,7 +336,9 @@ def pratyantardasha_sequence(
         → Moon → Mars → Rahu → Jupiter
     """
 
-    _validate_planet(antardasha_lord)
+    _validate_planet(
+        antardasha_lord
+    )
 
     starting_index = DASHA_SEQUENCE.index(
         antardasha_lord
@@ -204,10 +346,13 @@ def pratyantardasha_sequence(
 
     return [
         DASHA_SEQUENCE[
-            (starting_index + index)
-            % len(DASHA_SEQUENCE)
+            (
+                starting_index + index
+            ) % len(DASHA_SEQUENCE)
         ]
-        for index in range(len(DASHA_SEQUENCE))
+        for index in range(
+            len(DASHA_SEQUENCE)
+        )
     ]
 
 
@@ -219,26 +364,19 @@ def generate_pratyantardashas(
     antardasha: Antardasha,
 ) -> List[Pratyantardasha]:
     """
-    Generate all nine Pratyantardashas within an Antardasha.
+    Generate all nine Pratyantardashas within
+    an Antardasha.
 
-    The first Pratyantardasha is ruled by the Antardasha lord.
+    The first Pratyantardasha is ruled by the
+    Antardasha lord.
 
-    The sequence then follows:
-
-        Ketu
-        Venus
-        Sun
-        Moon
-        Mars
-        Rahu
-        Jupiter
-        Saturn
-        Mercury
-
-    rotated so that the Antardasha lord comes first.
+    The generated periods are contiguous and
+    partition the complete parent Antardasha.
     """
 
-    _validate_antardasha(antardasha)
+    _validate_antardasha(
+        antardasha
+    )
 
     sequence = pratyantardasha_sequence(
         antardasha.antardasha_lord
@@ -248,15 +386,14 @@ def generate_pratyantardashas(
 
     current_start = antardasha.start
 
-    # Use the actual Antardasha duration rather than
-    # independently reconstructing it from the parent
-    # Mahadasha. This guarantees that the generated
-    # Pratyantardashas exactly partition the AD.
-    antardasha_duration_days = (
-        antardasha.end - antardasha.start
+    parent_duration_days = (
+        antardasha.end
+        - antardasha.start
     ).total_seconds() / 86400.0
 
-    for lord in sequence:
+    for index, lord in enumerate(
+        sequence
+    ):
 
         fraction = (
             DASHA_YEARS[lord]
@@ -264,13 +401,19 @@ def generate_pratyantardashas(
         )
 
         duration_days = (
-            antardasha_duration_days
+            parent_duration_days
             * fraction
         )
 
-        current_end = current_start + timedelta(
-            days=duration_days
-        )
+        if index == len(sequence) - 1:
+            current_end = antardasha.end
+        else:
+            current_end = (
+                current_start
+                + timedelta(
+                    days=duration_days
+                )
+            )
 
         periods.append(
             Pratyantardasha(
@@ -287,25 +430,6 @@ def generate_pratyantardashas(
         )
 
         current_start = current_end
-
-    # Avoid floating-point accumulation leaving a tiny
-    # gap between the final PD and the parent AD.
-    if periods:
-        final_period = periods[-1]
-
-        periods[-1] = Pratyantardasha(
-            mahadasha_lord=(
-                final_period.mahadasha_lord
-            ),
-            antardasha_lord=(
-                final_period.antardasha_lord
-            ),
-            pratyantardasha_lord=(
-                final_period.pratyantardasha_lord
-            ),
-            start=final_period.start,
-            end=antardasha.end,
-        )
 
     return periods
 
@@ -329,20 +453,39 @@ def current_pratyantardasha(
     moment:
         Datetime to evaluate.
 
-        If omitted, the current time is used using the
-        timezone attached to the Antardasha start datetime.
+        If omitted, the current system time is used
+        with the timezone attached to the Antardasha
+        start datetime.
 
     Returns
     -------
     Pratyantardasha
-        Currently active Pratyantardasha.
+        Active Pratyantardasha.
     """
 
-    _validate_antardasha(antardasha)
+    _validate_antardasha(
+        antardasha
+    )
 
     if moment is None:
         moment = datetime.now(
             tz=antardasha.start.tzinfo
+        )
+
+    _validate_moment_against_period(
+        moment,
+        antardasha.start,
+        antardasha.end,
+    )
+
+    if not (
+        antardasha.start
+        <= moment
+        < antardasha.end
+    ):
+        raise ValueError(
+            "Requested moment falls outside "
+            "the Antardasha period."
         )
 
     periods = generate_pratyantardashas(
@@ -354,8 +497,8 @@ def current_pratyantardasha(
             return period
 
     raise ValueError(
-        "Requested moment falls outside the "
-        "Antardasha period."
+        "Could not determine the active "
+        "Pratyantardasha."
     )
 
 
@@ -374,12 +517,15 @@ def generate_all_pratyantardashas(
     Dasha timeline for reporting.
     """
 
-    from astrology.dasha import generate_antardashas
-
-    if not isinstance(mahadasha, Mahadasha):
+    if not isinstance(
+        mahadasha,
+        Mahadasha,
+    ):
         raise TypeError(
             "mahadasha must be a Mahadasha instance."
         )
+
+    from astrology.dasha import generate_antardashas
 
     antardashas = generate_antardashas(
         mahadasha

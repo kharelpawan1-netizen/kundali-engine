@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>कुण्डली • Vedic Kundali Dashboard | High-Precision Astrology Engine</title>
+  <meta name="description" content="Generate and explore your authentic Vedic Horoscope (Kundali) with interactive North and South Indian charts, all 16 divisional vargas, Vimshottari Dasha hierarchy, and Yoga analysis.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;900&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <!-- Ambient Cosmic Background Particles & Glow -->
+  <div class="cosmos-bg" id="cosmosBg">
+    <div class="cosmic-glow glow-1"></div>
+    <div class="cosmic-glow glow-2"></div>
+    <div class="cosmic-glow glow-3"></div>
+    <div class="stars-canvas-container">
+      <canvas id="starsCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Main App Wrapper -->
+  <div class="app-container">
+    
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-symbol">ॐ</div>
+        <div class="brand-text">
+          <h1 class="brand-title">KUNDALI <span>DASHBOARD</span></h1>
+          <p class="brand-tagline">Vedic Astrological Engine • BPHS & Swiss Ephemeris</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button type="button" class="btn btn-outline" id="btnSampleProfiles">
+          <span class="btn-icon">✨</span> Sample Charts
+        </button>
+        <button type="button" class="btn btn-outline" id="btnSavedProfiles">
+          <span class="btn-icon">📁</span> Saved (<span id="savedCount">0</span>)
+        </button>
+        <button type="button" class="btn btn-gold" id="btnPrintReport">
+          <span class="btn-icon">🖨️</span> Export / Print
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-layout">
+      
+      <!-- Left / Top: Birth Data Input Panel -->
+      <section class="card input-card" id="inputCard">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-icon">🪐</span>
+            <h2 class="card-title">Birth Details (जन्म विवरण)</h2>
+          </div>
+          <span class="badge badge-gold">Lahiri Sidereal</span>
+        </div>
+
+        <form id="chartForm" class="chart-form">
+          <div class="form-grid">
+            <!-- Full Name -->
+            <div class="form-group span-2">
+              <label for="nativeName" class="form-label">Full Name / Native</label>
+              <div class="input-wrapper">
+                <span class="input-icon">👤</span>
+                <input type="text" id="nativeName" class="form-control" placeholder="e.g. Pawan Sharma" value="Pawan Sharma" required>
+              </div>
+            </div>
+
+            <!-- Gender (Optional) -->
+            <div class="form-group">
+              <label for="nativeGender" class="form-label">Gender</label>
+              <select id="nativeGender" class="form-control">
+                <option value="Male" selected>Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <!-- Date of Birth -->
+            <div class="form-group">
+              <label for="birthDate" class="form-label">Date of Birth</label>
+              <div class="input-wrapper">
+                <span class="input-icon">📅</span>
+                <input type="date" id="birthDate" class="form-control" value="1995-08-20" required>
+              </div>
+            </div>
+
+            <!-- Time of Birth -->
+            <div class="form-group">
+              <label for="birthTime" class="form-label">Time of Birth (24h)</label>
+              <div class="input-wrapper">
+                <span class="input-icon">⏰</span>
+                <input type="time" id="birthTime" class="form-control" step="1" value="10:30:00" required>
+              </div>
+            </div>
+
+            <!-- Place of Birth with Live City Search -->
+            <div class="form-group span-2">
+              <div class="label-with-action">
+                <label for="birthPlace" class="form-label">Birth Place / City</label>
+                <button type="button" class="btn-text" id="btnToggleManualCoords">Manual Coordinates ▾</button>
+              </div>
+              <div class="city-search-container">
+                <div class="input-wrapper">
+                  <span class="input-icon">📍</span>
+                  <input type="text" id="birthPlace" class="form-control" placeholder="Search city (e.g. Kathmandu, Delhi, New York)" value="Kathmandu, Nepal" autocomplete="off" required>
+                  <button type="button" class="btn-search-clear" id="btnClearCity" title="Clear city search">✕</button>
+                </div>
+                <div class="city-dropdown" id="cityDropdown"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Collapsible Manual Coordinate / Timezone Overrides -->
+          <div class="manual-coords-drawer" id="manualCoordsDrawer" style="display: none;">
+            <div class="drawer-grid">
+              <div class="form-group">
+                <label for="inputLat" class="form-label">Latitude (°N/S)</label>
+                <input type="number" step="0.0001" id="inputLat" class="form-control" value="27.7172" required>
+              </div>
+              <div class="form-group">
+                <label for="inputLng" class="form-label">Longitude (°E/W)</label>
+                <input type="number" step="0.0001" id="inputLng" class="form-control" value="85.3240" required>
+              </div>
+              <div class="form-group span-2">
+                <label for="inputTz" class="form-label">IANA Timezone</label>
+                <input type="text" id="inputTz" class="form-control" value="Asia/Kathmandu" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ayanamsha & Preset Chips -->
+          <div class="presets-row">
+            <div class="ayanamsha-select-wrap">
+              <label for="ayanamshaSelect" class="form-label-sm">Ayanamsha:</label>
+              <select id="ayanamshaSelect" class="select-sm">
+                <option value="LAHIRI" selected>Lahiri (Chitrapaksha) - Standard</option>
+                <option value="RAMAN">B.V. Raman</option>
+                <option value="KP">Krishnamurti (KP)</option>
+              </select>
+            </div>
+            
+            <div class="preset-chips">
+              <span class="preset-label">Quick:</span>
+              <button type="button" class="chip" data-city="Kathmandu, Nepal" data-lat="27.7172" data-lng="85.3240" data-tz="Asia/Kathmandu">Kathmandu</button>
+              <button type="button" class="chip" data-city="New Delhi, India" data-lat="28.6139" data-lng="77.2090" data-tz="Asia/Kolkata">Delhi</button>
+              <button type="button" class="chip" data-city="Mumbai, India" data-lat="19.0760" data-lng="72.8777" data-tz="Asia/Kolkata">Mumbai</button>
+              <button type="button" class="chip" data-city="London, United Kingdom" data-lat="51.5074" data-lng="-0.1278" data-tz="Europe/London">London</button>
+              <button type="button" class="chip" data-city="New York, USA" data-lat="40.7128" data-lng="-74.0060" data-tz="America/New_York">New York</button>
+            </div>
+          </div>
+
+          <!-- Submit Buttons -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-glow" id="btnCalculate">
+              <span class="btn-icon">⚡</span> Calculate & View Kundali
+            </button>
+            <button type="button" class="btn btn-outline" id="btnSaveCurrent">
+              <span class="btn-icon">💾</span> Save Profile
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Loading State Overlay / Card -->
+      <div class="loading-panel" id="loadingPanel" style="display: none;">
+        <div class="spinner-cosmic">
+          <div class="spinner-ring ring-1"></div>
+          <div class="spinner-ring ring-2"></div>
+          <div class="spinner-ring ring-3"></div>
+          <div class="spinner-core">ॐ</div>
+        </div>
+        <h3 class="loading-title">Calculating Celestial Alignments...</h3>
+        <p class="loading-subtitle">Computing Swiss Ephemeris coordinates, Navagraha dignities & Shodashavarga charts</p>
+      </div>
+
+      <!-- Dashboard Results View Area (Populated dynamically) -->
+      <div class="results-container" id="resultsContainer">
+        
+        <!-- Hero Overview Banner -->
+        <section class="card hero-overview-card" id="heroOverview">
+          <div class="hero-header-row">
+            <div class="native-identity">
+              <h2 class="native-name" id="heroNativeName">Pawan Sharma</h2>
+              <p class="native-meta" id="heroNativeMeta">
+                Born: August 20, 1995 at 10:30:00 AM • Kathmandu, Nepal (Asia/Kathmandu)
+              </p>
+            </div>
+            <div class="ayanamsa-pill" id="heroAyanamsha">
+              Lahiri Ayanamsha: 23° 47' 55.4"
+            </div>
+          </div>
+
+          <div class="astral-badges-grid">
+            <div class="astral-badge lagna-badge">
+              <div class="badge-icon">🌅</div>
+              <div class="badge-content">
+                <span class="badge-label">Lagna (Ascendant)</span>
+                <span class="badge-value" id="heroLagna">Leo (Simha)</span>
+                <span class="badge-sub" id="heroLagnaDegree">15° 24' 12" • Lord: Sun</span>
+              </div>
+            </div>
+
+            <div class="astral-badge moon-badge">
+              <div class="badge-icon">🌙</div>
+              <div class="badge-content">
+                <span class="badge-label">Janma Rasi (Moon Sign)</span>
+                <span class="badge-value" id="heroRasi">Taurus (Vrishabha)</span>
+                <span class="badge-sub" id="heroNakshatra">Rohini Pada 2 • Lord: Moon</span>
+              </div>
+            </div>
+
+            <div class="astral-badge sun-badge">
+              <div class="badge-icon">☀️</div>
+              <div class="badge-content">
+                <span class="badge-label">Surya Rasi (Sun Sign)</span>
+                <span class="badge-value" id="heroSunSign">Leo (Simha)</span>
+                <span class="badge-sub" id="heroSunDignity">Own Sign • Moolatrikona</span>
+              </div>
+            </div>
+
+            <div class="astral-badge dasha-badge">
+              <div class="badge-icon">⏳</div>
+              <div class="badge-content">
+                <span class="badge-label">Current Active Dasha</span>
+                <span class="badge-value" id="heroActiveDasha">Saturn MD / Ketu AD</span>
+                <span class="badge-sub" id="heroActivePratyantar">Moon PD • Rahu SD</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Chart Section: North / South Indian SVG Canvas & Controls -->
+        <section class="card chart-view-card">
+          <div class="card-header chart-toolbar">
+            <div class="chart-style-toggle">
+              <button type="button" class="btn-toggle-tab active" data-chart-style="north">
+                <span class="toggle-icon">💠</span> North Indian (Diamond)
+              </button>
+              <button type="button" class="btn-toggle-tab" data-chart-style="south">
+                <span class="toggle-icon">⏹️</span> South Indian (Square)
+              </button>
+            </div>
+
+            <div class="varga-selector-group">
+              <label for="vargaSelect" class="varga-label">Chart Type:</label>
+              <select id="vargaSelect" class="select-varga">
+                <option value="D1" selected>D1 - Rasi (Birth / Physical Body)</option>
+                <option value="D9">D9 - Navamsha (Spouse & Destiny)</option>
+                <option value="D10">D10 - Dasamsa (Career & Status)</option>
+                <option value="D2">D2 - Hora (Wealth & Prosperity)</option>
+                <option value="D3">D3 - Drekkana (Siblings & Vitality)</option>
+                <option value="D7">D7 - Saptamsa (Children & Lineage)</option>
+                <option value="D12">D12 - Dvadasamsa (Parents & Ancestry)</option>
+                <option value="D16">D16 - Shodasamsa (Vehicles & Pleasures)</option>
+                <option value="D20">D20 - Vimsamsa (Spiritual Progress)</option>
+                <option value="D24">D24 - Chaturvimshamsa (Learning)</option>
+                <option value="D27">D27 - Bhamsa (Inner Strengths)</option>
+                <option value="D30">D30 - Trimshamsa (Hidden Obstacles)</option>
+                <option value="D40">D40 - Khavedamsa (Auspiciousness)</option>
+                <option value="D45">D45 - Akshavedamsa (Character Purity)</option>
+                <option value="D60">D60 - Shastiamsa (Past Life Karma)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="chart-display-layout">
+            <!-- SVG Chart Canvas Container -->
+            <div class="chart-canvas-box" id="chartCanvasBox">
+              <div class="chart-title-tag" id="currentChartTitle">D1 • RASI KUNDALI</div>
+              <div id="chartSvgWrapper" class="svg-wrapper"></div>
+              <div class="chart-hint">💡 Hover over planets or houses to inspect degrees, nakshatras, and dignities</div>
+            </div>
+
+            <!-- Quick Key Insights Panel -->
+            <div class="chart-side-insights">
+              <div class="side-card">
+                <h4 class="side-card-title">✦ Lagna & Key Points</h4>
+                <div class="key-metrics-list" id="sideMetricsList">
+                  <div class="metric-row">
+                    <span class="metric-key">Lagna Degree:</span>
+                    <span class="metric-val" id="metricLagnaDeg">15° 24' 12"</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="metric-key">Lagna Nakshatra:</span>
+                    <span class="metric-val" id="metricLagnaNak">Purva Phalguni (2)</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="metric-key">Lagna Lord:</span>
+                    <span class="metric-val" id="metricLagnaLord">Sun (House 1)</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="metric-key">Moon Degree:</span>
+                    <span class="metric-val" id="metricMoonDeg">12° 40' 05"</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="metric-key">Tithi / Paksha:</span>
+                    <span class="metric-val" id="metricTithi">Krishna Dashami</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="side-card">
+                <h4 class="side-card-title">✦ Planetary Dignity Highlights</h4>
+                <div class="dignity-tags-cloud" id="dignityTagsCloud">
+                  <!-- Injected dynamically -->
+                </div>
+              </div>
+
+              <div class="side-card yogas-quick-preview">
+                <h4 class="side-card-title">✦ Detected Yogas (<span id="quickYogaCount">0</span>)</h4>
+                <ul class="quick-yoga-list" id="quickYogaList">
+                  <!-- Injected dynamically -->
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tabbed Workspace Section -->
+        <section class="card tabs-workspace-card">
+          <nav class="nav-tabs" id="workspaceTabs">
+            <button type="button" class="tab-btn active" data-tab="planetsTab">
+              <span class="tab-icon">🪐</span> Grahas (Planets)
+            </button>
+            <button type="button" class="tab-btn" data-tab="housesTab">
+              <span class="tab-icon">🏛️</span> 12 Bhavas (Houses)
+            </button>
+            <button type="button" class="tab-btn" data-tab="dashaTab">
+              <span class="tab-icon">⏳</span> Vimshottari Dasha
+            </button>
+            <button type="button" class="tab-btn" data-tab="yogasTab">
+              <span class="tab-icon">👑</span> Vedic Yogas (<span id="tabYogaCount">0</span>)
+            </button>
+            <button type="button" class="tab-btn" data-tab="synthesisTab">
+              <span class="tab-icon">📜</span> Life Synthesis
+            </button>
+            <button type="button" class="tab-btn" data-tab="vargasTab">
+              <span class="tab-icon">☸</span> All 16 Vargas
+            </button>
+          </nav>
+
+          <div class="tab-content-container">
+            
+            <!-- TAB 1: PLANETS TABLE & CARDS -->
+            <div class="tab-pane active" id="planetsTab">
+              <div class="section-intro">
+                <h3>Navagraha Planetary Placements & BPHS Dignities</h3>
+                <p>Calculated using high-precision Swiss Ephemeris with Lahiri Sidereal Zodiac.</p>
+              </div>
+
+              <div class="table-responsive">
+                <table class="data-table" id="planetsTable">
+                  <thead>
+                    <tr>
+                      <th>Planet (Graha)</th>
+                      <th>Rasi (Sign)</th>
+                      <th>Sign Lord</th>
+                      <th>Degree in Sign</th>
+                      <th>House</th>
+                      <th>Nakshatra (Pada)</th>
+                      <th>Nak. Lord</th>
+                      <th>Dignity</th>
+                      <th>Speed / State</th>
+                    </tr>
+                  </thead>
+                  <tbody id="planetsTableBody">
+                    <!-- Injected dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 2: 12 HOUSES (BHAVAS) -->
+            <div class="tab-pane" id="housesTab">
+              <div class="section-intro">
+                <h3>12 Bhavas (House Placements & Parashari Aspects)</h3>
+                <p>Whole sign house system (BPHS standard) relative to the Ascendant sign.</p>
+              </div>
+
+              <div class="houses-grid" id="housesGrid">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+
+            <!-- TAB 3: VIMSHOTTARI DASHA EXPLORER -->
+            <div class="tab-pane" id="dashaTab">
+              <div class="section-intro">
+                <h3>Vimshottari Dasha Hierarchy (120-Year Cycle)</h3>
+                <p>Calculated from the exact longitude of the Moon at birth.</p>
+              </div>
+
+              <!-- Active Running Dasha Chain Card -->
+              <div class="active-dasha-card" id="activeDashaCard">
+                <div class="dasha-chain-header">
+                  <span class="chain-badge">CURRENT RUNNING DASHA</span>
+                  <span class="chain-timestamp" id="dashaCalcTimestamp">Now</span>
+                </div>
+                <div class="dasha-levels-row" id="dashaLevelsRow">
+                  <!-- Injected dynamically -->
+                </div>
+              </div>
+
+              <!-- Complete 120-Year Timeline Accordion -->
+              <div class="dasha-accordion-container" id="dashaAccordion">
+                <h4 class="accordion-section-title">Full 120-Year Mahadasha Timeline (Click to expand Antardashas)</h4>
+                <div class="dasha-accordion-list" id="dashaAccordionList">
+                  <!-- Injected dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: VEDIC YOGAS -->
+            <div class="tab-pane" id="yogasTab">
+              <div class="section-intro">
+                <h3>Detected Vedic Yogas & Planetary Combinations</h3>
+                <p>Structural evaluations of classical Raja Yogas, Dhana Yogas, Gaja Kesari, Budha-Aditya, Neecha Bhanga, and Parivartana combinations.</p>
+              </div>
+
+              <div class="yogas-cards-grid" id="yogasGrid">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+
+            <!-- TAB 5: LIFE SYNTHESIS & INTERPRETATIONS -->
+            <div class="tab-pane" id="synthesisTab">
+              <div class="section-intro">
+                <h3>Vedic Life Synthesis & Evidence-Based Insights</h3>
+                <p>Aggregated astrological evidence across Ascendant, Moon, Sun, 10th House (Karma), 2nd/11th Houses (Wealth), and active Dasha influences.</p>
+              </div>
+
+              <div class="synthesis-layout">
+                <div class="synthesis-card card-personality">
+                  <div class="synthesis-card-header">
+                    <span class="synth-icon">👤</span>
+                    <h4>Core Personality & Temperament</h4>
+                  </div>
+                  <div class="synth-body" id="synthPersonality">
+                    <!-- Injected dynamically -->
+                  </div>
+                </div>
+
+                <div class="synthesis-card card-career">
+                  <div class="synthesis-card-header">
+                    <span class="synth-icon">💼</span>
+                    <h4>Career, Status & Public Life (Karma)</h4>
+                  </div>
+                  <div class="synth-body" id="synthCareer">
+                    <!-- Injected dynamically -->
+                  </div>
+                </div>
+
+                <div class="synthesis-card card-wealth">
+                  <div class="synthesis-card-header">
+                    <span class="synth-icon">💰</span>
+                    <h4>Wealth, Financial Assets & Gains (Dhana)</h4>
+                  </div>
+                  <div class="synth-body" id="synthWealth">
+                    <!-- Injected dynamically -->
+                  </div>
+                </div>
+
+                <div class="synthesis-card card-health">
+                  <div class="synthesis-card-header">
+                    <span class="synth-icon">🌿</span>
+                    <h4>Vitality & Well-being (Tanu & Arogya)</h4>
+                  </div>
+                  <div class="synth-body" id="synthHealth">
+                    <!-- Injected dynamically -->
+                  </div>
+                </div>
+
+                <div class="synthesis-card card-themes span-2">
+                  <div class="synthesis-card-header">
+                    <span class="synth-icon">✨</span>
+                    <h4>Key Favorable Astrological Themes & Guidance</h4>
+                  </div>
+                  <div class="synth-body" id="synthThemes">
+                    <!-- Injected dynamically -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 6: ALL 16 VARGAS (SHODASHAVARGA) -->
+            <div class="tab-pane" id="vargasTab">
+              <div class="section-intro">
+                <h3>BPHS Shodashavarga (All 16 Divisional Charts)</h3>
+                <p>Comprehensive divisional chart calculations for deep astrological analysis.</p>
+              </div>
+
+              <div class="vargas-grid" id="vargasMiniGrid">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>© 2026 Kundali Engine Dashboard • High-Precision Vedic Calculations via Swiss Ephemeris & BPHS Principles.</p>
+    </footer>
+
+  </div>
+
+  <!-- Interactive Popover / Tooltip Container -->
+  <div class="astral-tooltip" id="astralTooltip"></div>
+
+  <!-- Sample Profiles Modal -->
+  <div class="modal-overlay" id="modalSampleProfiles" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>✨ Choose a Sample Horoscope Profile</h3>
+        <button type="button" class="btn-close-modal" id="btnCloseSampleModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="sample-profiles-list" id="sampleProfilesList">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saved Profiles Modal -->
+  <div class="modal-overlay" id="modalSavedProfiles" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📁 Saved Kundali Profiles</h3>
+        <button type="button" class="btn-close-modal" id="btnCloseSavedModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="saved-profiles-toolbar">
+          <button type="button" class="btn btn-sm btn-outline" id="btnExportJson">Export All (JSON)</button>
+          <label class="btn btn-sm btn-outline file-input-label">
+            Import JSON <input type="file" id="importJsonInput" accept=".json" style="display: none;">
+          </label>
+        </div>
+        <div class="saved-profiles-list" id="savedProfilesList">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/chart_renderer.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

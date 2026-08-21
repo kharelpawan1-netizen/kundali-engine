@@ -139,9 +139,14 @@ class Mahadasha:
     @property
     def duration_days(self) -> float:
         """Return duration in days."""
-        return (self.end - self.start).total_seconds() / 86400.0
+        return (
+            self.end - self.start
+        ).total_seconds() / 86400.0
 
-    def contains(self, moment: datetime) -> bool:
+    def contains(
+        self,
+        moment: datetime,
+    ) -> bool:
         """Return True when moment falls inside this period."""
         return self.start <= moment < self.end
 
@@ -158,9 +163,14 @@ class Antardasha:
     @property
     def duration_days(self) -> float:
         """Return duration in days."""
-        return (self.end - self.start).total_seconds() / 86400.0
+        return (
+            self.end - self.start
+        ).total_seconds() / 86400.0
 
-    def contains(self, moment: datetime) -> bool:
+    def contains(
+        self,
+        moment: datetime,
+    ) -> bool:
         """Return True when moment falls inside this period."""
         return self.start <= moment < self.end
 
@@ -169,12 +179,18 @@ class Antardasha:
 # Validation
 # ============================================================
 
-def normalize_longitude(longitude: float) -> float:
-    """Normalize longitude to the range [0, 360)."""
+def normalize_longitude(
+    longitude: float,
+) -> float:
+    """
+    Normalize longitude to the range [0, 360).
+    """
     return longitude % 360.0
 
 
-def validate_moon_longitude(moon_longitude: float) -> float:
+def validate_moon_longitude(
+    moon_longitude: float,
+) -> float:
     """
     Validate and normalize Moon longitude.
 
@@ -183,25 +199,36 @@ def validate_moon_longitude(moon_longitude: float) -> float:
 
     Exactly 360 degrees is treated as 0 degrees.
     """
-    if not isinstance(moon_longitude, (int, float)):
-        raise TypeError("Moon longitude must be numeric.")
+
+    if not isinstance(
+        moon_longitude,
+        (int, float),
+    ):
+        raise TypeError(
+            "Moon longitude must be numeric."
+        )
 
     if not 0.0 <= moon_longitude <= 360.0:
         raise ValueError(
-            "Moon longitude must be between 0 and 360 degrees."
+            "Moon longitude must be between "
+            "0 and 360 degrees."
         )
 
     if moon_longitude == 360.0:
         return 0.0
 
-    return normalize_longitude(float(moon_longitude))
+    return normalize_longitude(
+        float(moon_longitude)
+    )
 
 
 # ============================================================
 # Nakshatra
 # ============================================================
 
-def nakshatra_index(moon_longitude: float) -> int:
+def nakshatra_index(
+    moon_longitude: float,
+) -> int:
     """
     Return the zero-based Nakshatra index.
 
@@ -210,46 +237,82 @@ def nakshatra_index(moon_longitude: float) -> int:
     ...
     Revati = 26
     """
-    longitude = validate_moon_longitude(moon_longitude)
 
-    index = int(longitude / NAKSHATRA_SPAN)
+    longitude = validate_moon_longitude(
+        moon_longitude
+    )
+
+    index = int(
+        longitude / NAKSHATRA_SPAN
+    )
 
     return min(index, 26)
 
 
-def nakshatra_number(moon_longitude: float) -> int:
+def nakshatra_number(
+    moon_longitude: float,
+) -> int:
     """Return Nakshatra number from 1 to 27."""
-    return nakshatra_index(moon_longitude) + 1
+
+    return (
+        nakshatra_index(moon_longitude)
+        + 1
+    )
 
 
-def nakshatra_name(moon_longitude: float) -> str:
+def nakshatra_name(
+    moon_longitude: float,
+) -> str:
     """Return the traditional Nakshatra name."""
-    return NAKSHATRA_NAMES[nakshatra_index(moon_longitude)]
+
+    return NAKSHATRA_NAMES[
+        nakshatra_index(moon_longitude)
+    ]
 
 
-def nakshatra_lord(moon_longitude: float) -> str:
+def nakshatra_lord(
+    moon_longitude: float,
+) -> str:
     """Return the Vimshottari lord of the Moon's Nakshatra."""
-    return NAKSHATRA_LORDS[nakshatra_index(moon_longitude)]
+
+    return NAKSHATRA_LORDS[
+        nakshatra_index(moon_longitude)
+    ]
 
 
 # ============================================================
 # Mahadasha Calculations
 # ============================================================
 
-def dasha_years(planet: str) -> float:
-    """Return the classical Vimshottari duration of a planet."""
+def dasha_years(
+    planet: str,
+) -> float:
+    """
+    Return the classical Vimshottari duration
+    of a planet.
+    """
+
     try:
         return DASHA_YEARS[planet]
+
     except KeyError as exc:
         raise ValueError(
             f"Unknown Vimshottari planet: {planet}"
         ) from exc
 
 
-def next_dasha_lord(planet: str) -> str:
-    """Return the next planet in the Vimshottari sequence."""
+def next_dasha_lord(
+    planet: str,
+) -> str:
+    """
+    Return the next planet in the Vimshottari sequence.
+    """
+
     try:
-        index = DASHA_SEQUENCE.index(planet)
+        index = DASHA_SEQUENCE.index(
+            planet
+        )
+
     except ValueError as exc:
         raise ValueError(
             f"Unknown Vimshottari planet: {planet}"
@@ -260,21 +323,34 @@ def next_dasha_lord(planet: str) -> str:
     ]
 
 
-def moon_nakshatra_progress(moon_longitude: float) -> float:
+def moon_nakshatra_progress(
+    moon_longitude: float,
+) -> float:
     """
-    Return the fraction of the Moon's Nakshatra already traversed.
+    Return the fraction of the Moon's Nakshatra
+    already traversed.
 
     Returns:
         0.0 <= progress < 1.0
     """
-    longitude = validate_moon_longitude(moon_longitude)
 
-    position_in_nakshatra = longitude % NAKSHATRA_SPAN
+    longitude = validate_moon_longitude(
+        moon_longitude
+    )
 
-    return position_in_nakshatra / NAKSHATRA_SPAN
+    position_in_nakshatra = (
+        longitude % NAKSHATRA_SPAN
+    )
+
+    return (
+        position_in_nakshatra
+        / NAKSHATRA_SPAN
+    )
 
 
-def first_mahadasha_balance(moon_longitude: float) -> float:
+def first_mahadasha_balance(
+    moon_longitude: float,
+) -> float:
     """
     Calculate remaining years of the starting Mahadasha.
 
@@ -284,33 +360,53 @@ def first_mahadasha_balance(moon_longitude: float) -> float:
             Mahadasha years *
             remaining Nakshatra fraction
     """
-    lord = nakshatra_lord(moon_longitude)
 
-    elapsed_fraction = moon_nakshatra_progress(
+    lord = nakshatra_lord(
         moon_longitude
     )
 
-    remaining_fraction = 1.0 - elapsed_fraction
+    elapsed_fraction = (
+        moon_nakshatra_progress(
+            moon_longitude
+        )
+    )
 
-    return dasha_years(lord) * remaining_fraction
+    remaining_fraction = (
+        1.0 - elapsed_fraction
+    )
+
+    return (
+        dasha_years(lord)
+        * remaining_fraction
+    )
 
 
 # ============================================================
 # Date Utilities
 # ============================================================
 
-def years_to_days(years: float) -> float:
+def years_to_days(
+    years: float,
+) -> float:
     """
-    Convert Vimshottari years to days.
+    Convert Vimshottari years into days.
 
-    This implementation uses 365.25 days per year for
+    Uses 365.25 days per year for
     astronomical date projection.
     """
-    if not isinstance(years, (int, float)):
-        raise TypeError("Years must be numeric.")
+
+    if not isinstance(
+        years,
+        (int, float),
+    ):
+        raise TypeError(
+            "Years must be numeric."
+        )
 
     if years < 0:
-        raise ValueError("Years cannot be negative.")
+        raise ValueError(
+            "Years cannot be negative."
+        )
 
     return float(years) * 365.25
 
@@ -319,7 +415,19 @@ def add_years_fraction(
     moment: datetime,
     years: float,
 ) -> datetime:
-    """Add fractional Vimshottari years to a datetime."""
+    """
+    Add fractional Vimshottari years
+    to a datetime.
+    """
+
+    if not isinstance(
+        moment,
+        datetime,
+    ):
+        raise TypeError(
+            "moment must be a datetime."
+        )
+
     return moment + timedelta(
         days=years_to_days(years)
     )
@@ -335,16 +443,33 @@ def generate_mahadashas(
     count: int = 9,
 ) -> List[Mahadasha]:
     """
-    Generate Vimshottari Mahadasha periods beginning at birth.
+    Generate Vimshottari Mahadasha periods
+    beginning at birth.
 
-    The first Mahadasha is the lord of the Moon's Nakshatra.
-    Its duration is only the remaining balance at birth.
+    The first Mahadasha is the lord of the
+    Moon's Nakshatra.
 
-    Later Mahadashas use their full classical durations.
+    Its duration is the remaining balance
+    at birth.
+
+    Later Mahadashas use their full classical
+    durations.
     """
-    if not isinstance(birth_datetime, datetime):
+
+    if not isinstance(
+        birth_datetime,
+        datetime,
+    ):
         raise TypeError(
             "birth_datetime must be a datetime."
+        )
+
+    if not isinstance(
+        count,
+        int,
+    ):
+        raise TypeError(
+            "count must be an integer."
         )
 
     if count <= 0:
@@ -352,7 +477,10 @@ def generate_mahadashas(
             "count must be greater than zero."
         )
 
-    starting_lord = nakshatra_lord(moon_longitude)
+    starting_lord = nakshatra_lord(
+        moon_longitude
+    )
+
     starting_index = DASHA_SEQUENCE.index(
         starting_lord
     )
@@ -366,8 +494,11 @@ def generate_mahadashas(
     current_start = birth_datetime
 
     for index in range(count):
+
         lord = DASHA_SEQUENCE[
-            (starting_index + index)
+            (
+                starting_index + index
+            )
             % len(DASHA_SEQUENCE)
         ]
 
@@ -400,10 +531,30 @@ def current_mahadasha(
     moon_longitude: float,
     moment: Optional[datetime] = None,
 ) -> Mahadasha:
-    """Return the Mahadasha active at the requested moment."""
+    """
+    Return the Mahadasha active at the
+    requested moment.
+    """
+
+    if not isinstance(
+        birth_datetime,
+        datetime,
+    ):
+        raise TypeError(
+            "birth_datetime must be a datetime."
+        )
+
     if moment is None:
         moment = datetime.now(
             tz=birth_datetime.tzinfo
+        )
+
+    if not isinstance(
+        moment,
+        datetime,
+    ):
+        raise TypeError(
+            "moment must be a datetime."
         )
 
     periods = generate_mahadashas(
@@ -413,12 +564,13 @@ def current_mahadasha(
     )
 
     for period in periods:
+
         if period.contains(moment):
             return period
 
     raise ValueError(
-        "Requested moment falls outside the "
-        "generated Mahadasha timeline."
+        "Requested moment falls outside "
+        "the generated Mahadasha timeline."
     )
 
 
@@ -430,20 +582,35 @@ def generate_antardashas(
     mahadasha: Mahadasha,
 ) -> List[Antardasha]:
     """
-    Generate all nine Antardashas inside a Mahadasha.
+    Generate all nine Antardashas inside
+    a Mahadasha.
 
-    The sequence starts with the Mahadasha lord and follows
-    the normal Vimshottari order.
+    The sequence starts with the Mahadasha lord
+    and follows the normal Vimshottari order.
 
     Formula:
 
         AD duration =
             MD duration *
             AD lord years / 120
+
+    The final Antardasha is explicitly aligned
+    with the parent Mahadasha end to prevent
+    floating-point boundary drift.
     """
-    if not isinstance(mahadasha, Mahadasha):
+
+    if not isinstance(
+        mahadasha,
+        Mahadasha,
+    ):
         raise TypeError(
             "mahadasha must be a Mahadasha instance."
+        )
+
+    if mahadasha.planet not in DASHA_YEARS:
+        raise ValueError(
+            f"Unknown Vimshottari planet: "
+            f"{mahadasha.planet}"
         )
 
     starting_index = DASHA_SEQUENCE.index(
@@ -454,9 +621,14 @@ def generate_antardashas(
 
     current_start = mahadasha.start
 
-    for index in range(len(DASHA_SEQUENCE)):
+    for index in range(
+        len(DASHA_SEQUENCE)
+    ):
+
         lord = DASHA_SEQUENCE[
-            (starting_index + index)
+            (
+                starting_index + index
+            )
             % len(DASHA_SEQUENCE)
         ]
 
@@ -466,14 +638,20 @@ def generate_antardashas(
             / VIMSHOTTARI_TOTAL_YEARS
         )
 
-        current_end = add_years_fraction(
-            current_start,
-            duration_years,
-        )
+        if index == len(DASHA_SEQUENCE) - 1:
+            current_end = mahadasha.end
+
+        else:
+            current_end = add_years_fraction(
+                current_start,
+                duration_years,
+            )
 
         periods.append(
             Antardasha(
-                mahadasha_lord=mahadasha.planet,
+                mahadasha_lord=(
+                    mahadasha.planet
+                ),
                 antardasha_lord=lord,
                 start=current_start,
                 end=current_end,
@@ -490,10 +668,30 @@ def current_antardasha(
     moon_longitude: float,
     moment: Optional[datetime] = None,
 ) -> Antardasha:
-    """Return the Antardasha active at the requested moment."""
+    """
+    Return the Antardasha active at the
+    requested moment.
+    """
+
+    if not isinstance(
+        birth_datetime,
+        datetime,
+    ):
+        raise TypeError(
+            "birth_datetime must be a datetime."
+        )
+
     if moment is None:
         moment = datetime.now(
             tz=birth_datetime.tzinfo
+        )
+
+    if not isinstance(
+        moment,
+        datetime,
+    ):
+        raise TypeError(
+            "moment must be a datetime."
         )
 
     mahadasha = current_mahadasha(
@@ -507,12 +705,13 @@ def current_antardasha(
     )
 
     for period in antardashas:
+
         if period.contains(moment):
             return period
 
     raise ValueError(
-        "Requested moment falls outside the "
-        "generated Antardasha timeline."
+        "Requested moment falls outside "
+        "the generated Antardasha timeline."
     )
 
 
