@@ -1126,11 +1126,188 @@
       });
     });
 
-    // Print Report
-    const btnPrint = document.getElementById("btnPrintReport");
-    if (btnPrint) {
-      btnPrint.addEventListener("click", () => window.print());
+    // Profile Storage Manager
+    function getSavedProfiles() {
+      try {
+        return JSON.parse(localStorage.getItem("kundali_saved_profiles") || "[]");
+      } catch (e) {
+        return [];
+      }
     }
+
+    function saveProfilesToStorage(list) {
+      localStorage.setItem("kundali_saved_profiles", JSON.stringify(list));
+      updateSavedCount();
+    }
+
+    function updateSavedCount() {
+      const el = document.getElementById("savedCount");
+      if (el) el.textContent = getSavedProfiles().length;
+    }
+
+    // Save Current Profile Button
+    const btnSaveCurrent = document.getElementById("btnSaveCurrent");
+    if (btnSaveCurrent) {
+      btnSaveCurrent.addEventListener("click", () => {
+        const name = document.getElementById("nativeName").value.trim() || "Native";
+        const gender = document.getElementById("nativeGender").value;
+        const birthDate = document.getElementById("birthDate").value;
+        const birthTime = document.getElementById("birthTime").value;
+        const place = birthPlaceInput.value.trim() || "Kathmandu, Nepal";
+        const lat = parseFloat(document.getElementById("inputLat").value) || 27.7172;
+        const lng = parseFloat(document.getElementById("inputLng").value) || 85.3240;
+        const tz = document.getElementById("inputTz").value.trim() || "Asia/Kathmandu";
+        const ayanamsha = document.getElementById("ayanamshaSelect").value || "LAHIRI";
+
+        const profile = {
+          id: "prof_" + Date.now(),
+          name,
+          gender,
+          birth_date: birthDate,
+          birth_time: birthTime,
+          place,
+          latitude: lat,
+          longitude: lng,
+          timezone: tz,
+          ayanamsha,
+          saved_at: new Date().toISOString(),
+        };
+
+        const list = getSavedProfiles();
+        list.unshift(profile);
+        saveProfilesToStorage(list);
+        showToast(`Profile "${name}" saved locally!`, "success");
+      });
+    }
+
+    // Saved Profiles Modal
+    const btnSavedProfiles = document.getElementById("btnSavedProfiles");
+    const btnCloseSavedModal = document.getElementById("btnCloseSavedModal");
+    const savedListEl = document.getElementById("savedProfilesList");
+    const btnExportJson = document.getElementById("btnExportJson");
+    const importJsonInput = document.getElementById("importJsonInput");
+
+    function renderSavedProfilesModal() {
+      const list = getSavedProfiles();
+      if (!savedListEl) return;
+      if (!list.length) {
+        savedListEl.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted)">No saved profiles yet. Click "Save Profile" to store horoscopes.</div>`;
+        return;
+      }
+
+      savedListEl.innerHTML = list.map((p, idx) => `
+        <div class="profile-card" data-idx="${idx}">
+          <div>
+            <span class="profile-title">${p.name}</span> (${p.gender || 'Native'})<br>
+            <small style="color:var(--text-secondary)">Born: ${p.birth_date} ${p.birth_time} • ${p.place}</small>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="btn btn-sm btn-gold btn-load-saved" data-idx="${idx}">Load</button>
+            <button type="button" class="btn btn-sm btn-outline btn-delete-saved" data-idx="${idx}" style="color:var(--accent-red)">✕</button>
+          </div>
+        </div>
+      `).join("");
+
+      savedListEl.querySelectorAll(".btn-load-saved").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.idx);
+          const p = list[idx];
+          if (!p) return;
+          document.getElementById("nativeName").value = p.name;
+          document.getElementById("nativeGender").value = p.gender || "Male";
+          document.getElementById("birthDate").value = p.birth_date;
+          document.getElementById("birthTime").value = p.birth_time;
+          birthPlaceInput.value = p.place;
+          document.getElementById("inputLat").value = p.latitude;
+          document.getElementById("inputLng").value = p.longitude;
+          document.getElementById("inputTz").value = p.timezone;
+          if (document.getElementById("ayanamshaSelect")) {
+            document.getElementById("ayanamshaSelect").value = p.ayanamsha || "LAHIRI";
+          }
+          closeModal("modalSavedProfiles");
+          handleChartCalculation();
+        });
+      });
+
+      savedListEl.querySelectorAll(".btn-delete-saved").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.idx);
+          list.splice(idx, 1);
+          saveProfilesToStorage(list);
+          renderSavedProfilesModal();
+          showToast("Profile deleted.", "info");
+        });
+      });
+    }
+
+    if (btnSavedProfiles) {
+      btnSavedProfiles.addEventListener("click", () => {
+        renderSavedProfilesModal();
+        openModal("modalSavedProfiles");
+      });
+    }
+    if (btnCloseSavedModal) {
+      btnCloseSavedModal.addEventListener("click", () => closeModal("modalSavedProfiles"));
+    }
+
+    // Export Profiles to JSON
+    if (btnExportJson) {
+      btnExportJson.addEventListener("click", () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(getSavedProfiles(), null, 2));
+        const a = document.createElement("a");
+        a.href = dataStr;
+        a.download = "kundali_profiles.json";
+        a.click();
+        showToast("Exported profiles as JSON!", "success");
+      });
+    }
+
+    // Import Profiles from JSON
+    if (importJsonInput) {
+      importJsonInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const imported = JSON.parse(evt.target.result);
+            if (Array.isArray(imported)) {
+              const merged = [...imported, ...getSavedProfiles()];
+              saveProfilesToStorage(merged);
+              renderSavedProfilesModal();
+              showToast(`Imported ${imported.length} profiles!`, "success");
+            }
+          } catch (err) {
+            showToast("Failed to parse JSON file.", "error");
+          }
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    // Download SVG
+    const btnDownloadSvg = document.getElementById("btnDownloadSvg");
+    if (btnDownloadSvg) {
+      btnDownloadSvg.addEventListener("click", () => {
+        const svgEl = chartSvgWrapper.querySelector("svg");
+        if (!svgEl) return;
+        const svgData = new XMLSerializer().serializeToString(svgEl);
+        const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const name = (document.getElementById("nativeName").value || "Kundali").replace(/\s+/g, "_");
+        link.href = url;
+        link.download = `${name}_${currentVarga}_Chart.svg`;
+        link.click();
+        URL.revokeObjectURL(url);
+        showToast(`Downloaded ${currentVarga} Chart as SVG!`, "success");
+      });
+    }
+
+    // Update Saved Count on Startup
+    updateSavedCount();
 
     // Auto-calculate initial chart
     handleChartCalculation();

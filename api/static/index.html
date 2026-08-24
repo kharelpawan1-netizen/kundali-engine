@@ -7,7 +7,7 @@
   <meta name="description" content="Professional Vedic Astrology Platform with North/South Indian charts, 16 Shodashavarga charts, 6-level Vimshottari Dasha, Balas strengths, Panchadha Maitri, Shani Sade Sati, Transits, and Vedic Yogas.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;900&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;900&family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -158,7 +158,7 @@
             </div>
             
             <div class="preset-chips">
-              <span class="preset-label">Quick:</span>
+              <span class="preset-label">Quick Presets:</span>
               <button type="button" class="chip" data-city="Kathmandu, Nepal" data-lat="27.7172" data-lng="85.3240" data-tz="Asia/Kathmandu">Kathmandu</button>
               <button type="button" class="chip" data-city="Pokhara, Nepal" data-lat="28.2096" data-lng="83.9856" data-tz="Asia/Kathmandu">Pokhara</button>
               <button type="button" class="chip" data-city="New Delhi, India" data-lat="28.6139" data-lng="77.2090" data-tz="Asia/Kolkata">Delhi</button>
@@ -214,8 +214,8 @@
               <div class="badge-icon">🌅</div>
               <div class="badge-content">
                 <span class="badge-label">Lagna (Ascendant)</span>
-                <span class="badge-value" id="heroLagna">Leo (Simha)</span>
-                <span class="badge-sub" id="heroLagnaDegree">15° 24' 12" • Lord: Sun</span>
+                <span class="badge-value" id="heroLagna">Libra (Tula)</span>
+                <span class="badge-sub" id="heroLagnaDegree">15° 24' 12" • Lord: Venus</span>
               </div>
             </div>
 
@@ -269,26 +269,32 @@
               </button>
             </div>
 
-            <div class="varga-selector-group">
-              <label for="vargaSelect" class="varga-label">Divisional Chart:</label>
-              <select id="vargaSelect" class="select-varga">
-                <option value="D1" selected>D1 - Rasi (Birth / Physical Body)</option>
-                <option value="D9">D9 - Navamsha (Spouse & Destiny)</option>
-                <option value="D10">D10 - Dasamsa (Career & Status)</option>
-                <option value="D2">D2 - Hora (Wealth & Prosperity)</option>
-                <option value="D3">D3 - Drekkana (Siblings & Vitality)</option>
-                <option value="D4">D4 - Chaturthamsa (Fortune & Assets)</option>
-                <option value="D7">D7 - Saptamsa (Children & Lineage)</option>
-                <option value="D12">D12 - Dvadasamsa (Parents & Ancestry)</option>
-                <option value="D16">D16 - Shodasamsa (Vehicles & Pleasures)</option>
-                <option value="D20">D20 - Vimsamsa (Spiritual Progress)</option>
-                <option value="D24">D24 - Chaturvimshamsa (Learning & Intellect)</option>
-                <option value="D27">D27 - Bhamsa (Inner Strengths & Weaknesses)</option>
-                <option value="D30">D30 - Trimshamsa (Arishta & Hidden Obstacles)</option>
-                <option value="D40">D40 - Khavedamsa (Auspicious Matters)</option>
-                <option value="D45">D45 - Akshavedamsa (Character Purity)</option>
-                <option value="D60">D60 - Shastiamsa (Past Life Karma & Root Destiny)</option>
-              </select>
+            <div class="chart-actions-right">
+              <div class="varga-selector-group">
+                <label for="vargaSelect" class="varga-label">Chart Type:</label>
+                <select id="vargaSelect" class="select-varga">
+                  <option value="D1" selected>D1 - Rasi (Birth / Physical Body)</option>
+                  <option value="D9">D9 - Navamsha (Spouse & Destiny)</option>
+                  <option value="D10">D10 - Dasamsa (Career & Status)</option>
+                  <option value="D2">D2 - Hora (Wealth & Prosperity)</option>
+                  <option value="D3">D3 - Drekkana (Siblings & Vitality)</option>
+                  <option value="D4">D4 - Chaturthamsa (Fortune & Assets)</option>
+                  <option value="D7">D7 - Saptamsa (Children & Lineage)</option>
+                  <option value="D12">D12 - Dvadasamsa (Parents & Ancestry)</option>
+                  <option value="D16">D16 - Shodasamsa (Vehicles & Pleasures)</option>
+                  <option value="D20">D20 - Vimsamsa (Spiritual Progress)</option>
+                  <option value="D24">D24 - Chaturvimshamsa (Learning & Intellect)</option>
+                  <option value="D27">D27 - Bhamsa (Inner Strengths & Weaknesses)</option>
+                  <option value="D30">D30 - Trimshamsa (Arishta & Hidden Obstacles)</option>
+                  <option value="D40">D40 - Khavedamsa (Auspicious Matters)</option>
+                  <option value="D45">D45 - Akshavedamsa (Character Purity)</option>
+                  <option value="D60">D60 - Shastiamsa (Past Life Karma & Root Destiny)</option>
+                </select>
+              </div>
+
+              <button type="button" class="btn btn-sm btn-outline" id="btnDownloadSvg" title="Download Chart as SVG Vector">
+                ⬇️ SVG
+              </button>
             </div>
           </div>
 
@@ -299,6 +305,7 @@
               <div id="chartSvgWrapper" class="svg-wrapper"></div>
               <div class="chart-legend-row">
                 <span class="legend-item"><span class="legend-dot exalted">★</span> Exalted</span>
+                <span class="legend-item"><span class="legend-dot own">✦</span> Own Sign</span>
                 <span class="legend-item"><span class="legend-dot debilitated">▼</span> Debilitated</span>
                 <span class="legend-item"><span class="legend-dot retrograde">[R]</span> Retrograde</span>
                 <span class="legend-item"><span class="legend-dot combust">🔥</span> Combust</span>
@@ -316,11 +323,11 @@
                   </div>
                   <div class="metric-row">
                     <span class="metric-key">Lagna Nakshatra:</span>
-                    <span class="metric-val" id="metricLagnaNak">Purva Phalguni (2)</span>
+                    <span class="metric-val" id="metricLagnaNak">Swati (2)</span>
                   </div>
                   <div class="metric-row">
                     <span class="metric-key">Lagna Lord:</span>
-                    <span class="metric-val" id="metricLagnaLord">Sun (House 1)</span>
+                    <span class="metric-val" id="metricLagnaLord">Venus (House 11)</span>
                   </div>
                   <div class="metric-row">
                     <span class="metric-key">Moon Degree:</span>
