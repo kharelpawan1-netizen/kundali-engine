@@ -40,11 +40,13 @@ from models.birth_data import BirthData
 from models.location import Location
 
 
+from pathlib import Path
+
 # ============================================================
 # CONFIGURATION
 # ============================================================
 
-EPHEMERIS_PATH = r"D:\kundali\ephe"
+EPHEMERIS_PATH = str(Path(__file__).resolve().parent / "ephe")
 
 
 # ============================================================
