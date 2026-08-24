@@ -12,6 +12,7 @@
   let currentVarga = "D1";
   let sampleProfiles = [];
   let nepalDistrictsData = null;
+  let lastGeocodedPlace = "Kathmandu, Nepal";
 
   // DOM Elements
   const chartForm = document.getElementById("chartForm");
@@ -138,27 +139,50 @@
     const birthDate = document.getElementById("birthDate").value;
     const birthTime = document.getElementById("birthTime").value;
     const place = birthPlaceInput.value.trim() || "Kathmandu, Nepal";
-    const lat = parseFloat(document.getElementById("inputLat").value) || 27.7172;
-    const lng = parseFloat(document.getElementById("inputLng").value) || 85.3240;
-    const tz = document.getElementById("inputTz").value.trim() || "Asia/Kathmandu";
+    let lat = parseFloat(document.getElementById("inputLat").value) || 27.7172;
+    let lng = parseFloat(document.getElementById("inputLng").value) || 85.3240;
+    let tz = document.getElementById("inputTz").value.trim() || "Asia/Kathmandu";
     const ayanamsha = document.getElementById("ayanamshaSelect").value || "LAHIRI";
-
-    const payload = {
-      name,
-      gender,
-      birth_date: birthDate,
-      birth_time: birthTime,
-      place,
-      latitude: lat,
-      longitude: lng,
-      timezone: tz,
-      ayanamsha,
-    };
 
     if (loadingPanel) loadingPanel.style.display = "block";
     if (resultsContainer) resultsContainer.style.opacity = "0.4";
 
     try {
+      // Dynamic on-the-fly geocoding when custom place query is typed instead of clicked
+      if (place.toLowerCase() !== lastGeocodedPlace.toLowerCase()) {
+        const geoRes = await fetch("/api/geocode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: place }),
+        });
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          if (geoData && geoData.match) {
+            const match = geoData.match;
+            lat = match.latitude;
+            lng = match.longitude;
+            tz = match.timezone;
+            document.getElementById("inputLat").value = lat;
+            document.getElementById("inputLng").value = lng;
+            document.getElementById("inputTz").value = tz;
+            lastGeocodedPlace = place;
+            showToast(`Location resolved: ${match.name} (${lat}°, ${lng}°)`, "success");
+          }
+        }
+      }
+
+      const payload = {
+        name,
+        gender,
+        birth_date: birthDate,
+        birth_time: birthTime,
+        place,
+        latitude: lat,
+        longitude: lng,
+        timezone: tz,
+        ayanamsha,
+      };
+
       const res = await fetch("/api/chart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -889,6 +913,7 @@
         document.getElementById("inputLat").value = chip.dataset.lat;
         document.getElementById("inputLng").value = chip.dataset.lng;
         document.getElementById("inputTz").value = chip.dataset.tz;
+        lastGeocodedPlace = chip.dataset.name + ", Nepal";
         closeModal("modalNepalDistricts");
         showToast(`Selected Nepal District: ${chip.dataset.name}`, "info");
       });
@@ -958,6 +983,7 @@
         document.getElementById("inputLat").value = c.latitude;
         document.getElementById("inputLng").value = c.longitude;
         document.getElementById("inputTz").value = c.timezone;
+        lastGeocodedPlace = c.name;
         cityDropdown.style.display = "none";
       });
       cityDropdown.appendChild(div);
@@ -1104,6 +1130,7 @@
               document.getElementById("inputLat").value = sp.latitude;
               document.getElementById("inputLng").value = sp.longitude;
               document.getElementById("inputTz").value = sp.timezone;
+              lastGeocodedPlace = sp.place;
               closeModal("modalSampleProfiles");
               handleChartCalculation();
             });
@@ -1123,6 +1150,7 @@
         document.getElementById("inputLat").value = chip.dataset.lat;
         document.getElementById("inputLng").value = chip.dataset.lng;
         document.getElementById("inputTz").value = chip.dataset.tz;
+        lastGeocodedPlace = chip.dataset.city;
       });
     });
 
@@ -1222,6 +1250,7 @@
           document.getElementById("inputLat").value = p.latitude;
           document.getElementById("inputLng").value = p.longitude;
           document.getElementById("inputTz").value = p.timezone;
+          lastGeocodedPlace = p.place;
           if (document.getElementById("ayanamshaSelect")) {
             document.getElementById("ayanamshaSelect").value = p.ayanamsha || "LAHIRI";
           }
