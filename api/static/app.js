@@ -809,12 +809,21 @@
         title: v.title,
         lagna_sign: v.lagna_sign_number,
         house_placements: {},
+        planet_signs: {},
       };
       for (let h = 1; h <= 12; h++) {
         adapted.house_placements[h] = (v.houses[h] && v.houses[h].planets) || [];
       }
+      for (const [pName, pObj] of Object.entries(v.planets || {})) {
+        adapted.planet_signs[pName] = pObj.sign_number;
+      }
 
-      const miniSvg = ChartRenderer.renderNorthIndianSvg(adapted, planetsMap);
+      let miniSvg = "";
+      if (currentChartStyle === "south") {
+        miniSvg = ChartRenderer.renderSouthIndianSvg(adapted, planetsMap);
+      } else {
+        miniSvg = ChartRenderer.renderNorthIndianSvg(adapted, planetsMap);
+      }
 
       grid.innerHTML += `
         <div class="varga-mini-card" data-varga-code="${v.code}">

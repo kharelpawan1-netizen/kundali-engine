@@ -554,6 +554,38 @@ def serialize_live_transits(chart: BirthChart) -> Dict[str, Any]:
     }
 
 
+def extract_varga_sign_and_deg(longitude: float, varga_code: str, attr_name: str) -> tuple[int, float]:
+    """Extract the sign number (1-12) and degree within sign for any of the 16 Shodashavarga charts."""
+    if varga_code == "D1":
+        return sign_number(longitude), sign_degree(longitude)
+
+    if varga_code == "D4":
+        from astronomy.chaturthamsa import chaturthamsa
+        pos = chaturthamsa(longitude)
+        s_num = pos.sign.number if hasattr(pos.sign, "number") else int(pos.sign)
+        deg = (longitude % 7.5) * 4.0
+        return s_num, deg
+
+    from astronomy.varga_engine import build_varga_chart
+    vc = build_varga_chart(longitude)
+    vpos = getattr(vc, attr_name, None)
+    if vpos is None:
+        return 1, 0.0
+
+    sign_obj = getattr(vpos, "sign", None)
+    if isinstance(sign_obj, ZodiacSign):
+        s_num = sign_obj.number
+    elif hasattr(sign_obj, "number"):
+        s_num = sign_obj.number
+    elif isinstance(sign_obj, int):
+        s_num = sign_obj
+    else:
+        s_num = 1
+
+    deg = getattr(vpos, "degree_in_sign", 0.0)
+    return s_num, deg
+
+
 def serialize_varga_positions(chart: BirthChart) -> Dict[str, Any]:
     """Serialize all 16 Shodashavarga divisional charts (D1 to D60)."""
     varga_keys = [
@@ -578,14 +610,7 @@ def serialize_varga_positions(chart: BirthChart) -> Dict[str, Any]:
     vargas_result = {}
 
     for d_code, title, attr_name in varga_keys:
-        lagna_sign_num = 1
-        if attr_name == "D1":
-            lagna_sign_num = sign_number(chart.ascendant)
-        else:
-            asc_vchart = build_varga_chart(chart.ascendant)
-            lagna_vpos = getattr(asc_vchart, attr_name, None)
-            if lagna_vpos is not None:
-                lagna_sign_num = getattr(lagna_vpos, "sign_number", 1)
+        lagna_sign_num, _ = extract_varga_sign_and_deg(chart.ascendant, d_code, attr_name)
 
         # Build 12 houses for this Varga
         varga_houses = {}
@@ -601,20 +626,8 @@ def serialize_varga_positions(chart: BirthChart) -> Dict[str, Any]:
         # Place each planet in its respective Varga house
         planets_varga = {}
         for p_name, p in chart.planets.items():
-            if attr_name == "D1":
-                p_sign_num = p.sign_number
-                p_deg = p.sign_degree
-            else:
-                p_vchart = build_varga_chart(p.longitude)
-                p_vpos = getattr(p_vchart, attr_name, None)
-                if p_vpos is not None:
-                    p_sign_num = getattr(p_vpos, "sign_number", 1)
-                    p_deg = getattr(p_vpos, "degree_in_sign", 0.0)
-                else:
-                    p_sign_num = 1
-                    p_deg = 0.0
-
-            p_house = (((p_sign_num - lagna_sign_num) % 12) + 1)
+            p_sign_num, p_deg = extract_varga_sign_and_deg(p.longitude, d_code, attr_name)
+            p_house = (((p_sign_num - lagna_sign_num + 12) % 12) + 1)
             varga_houses[p_house]["planets"].append(p_name)
 
             meta = PLANET_METADATA.get(p_name, {"short": p_name[:2], "color": "#fff"})
