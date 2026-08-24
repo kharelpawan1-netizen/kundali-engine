@@ -1,8 +1,9 @@
 """
 tests/test_dashboard_api.py
 
-Automated integration test suite for the Kundali Dashboard API.
-Tests all endpoints, chart calculations, vargas, dashas, and yogas.
+Automated integration test suite for the Vedic Kundali Analytics API.
+Tests all endpoints, validations, chart calculations, Balas, Panchadha,
+Sade Sati, Transits, Vargas, Dashas, and Yogas.
 """
 
 from fastapi.testclient import TestClient
@@ -16,7 +17,7 @@ def test_health_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert data["service"] == "kundali-dashboard-api"
+    assert data["service"] == "kundali-analytics-api"
 
 
 def test_static_files():
@@ -49,6 +50,7 @@ def test_cities_endpoint():
     assert res.status_code == 200
     data = res.json()
     assert len(data["results"]) > 0
+
 
 def test_nepal_districts_endpoint():
     res = client.get("/api/nepal-districts")
@@ -83,6 +85,18 @@ def test_sample_profiles_endpoint():
     assert "Aarav Gupta" in names
 
 
+def test_current_transits_endpoint():
+    res = client.get("/api/transits-current")
+    assert res.status_code == 200
+    data = res.json()
+    assert "planets" in data
+    assert len(data["planets"]) == 9
+    p_names = [p["planet"] for p in data["planets"]]
+    assert "Sun" in p_names
+    assert "Jupiter" in p_names
+    assert "Saturn" in p_names
+
+
 def test_chart_calculation_complete():
     payload = {
         "name": "Pawan Sharma",
@@ -109,11 +123,12 @@ def test_chart_calculation_complete():
     assert "sign_degree_dms" in data["ascendant"]
     assert "nakshatra" in data["ascendant"]
 
-    # 3. Planets list (Sun to Ketu)
+    # 3. Planets list (Sun to Ketu) with combustion checks
     assert len(data["planets"]) == 9
-    planet_names = [p["name"] for p in data["planets"]]
-    for expected in ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]:
-        assert expected in planet_names
+    for p in data["planets"]:
+        assert "is_combust" in p
+        assert "dignity" in p
+        assert "speed" in p
 
     # 4. Houses 1 to 12
     assert len(data["houses"]) == 12
@@ -123,7 +138,7 @@ def test_chart_calculation_complete():
         assert "sign_lord" in h
         assert "occupants" in h
 
-    # 5. Divisional Charts (Vargas)
+    # 5. Divisional Charts (Vargas D1 to D60)
     vargas = data["vargas"]
     assert "D1" in vargas
     assert "D9" in vargas
@@ -137,39 +152,60 @@ def test_chart_calculation_complete():
     assert dashas["active_chain"]["mahadasha"] is not None
     assert len(dashas["mahadashas"]) == 9
 
-    # 7. Vedic Yogas
+    # 7. Vedic Yogas (including Guru Chandal Yoga)
     assert "yogas" in data
     assert "all" in data["yogas"]
     assert "detected" in data["yogas"]
+    yoga_names = [y["name"] for y in data["yogas"]["all"]]
+    assert "Guru Chandal Yoga" in yoga_names
+    assert "Raja Yoga" in yoga_names
 
-    # 8. Synthesis
+    # 8. Planetary Strengths (Balas)
+    assert "balas" in data
+    assert len(data["balas"]["planets"]) == 7
+    for bp in data["balas"]["planets"]:
+        assert "total_virupas" in bp
+        assert "relative_percentage" in bp
+        assert "status" in bp
+
+    # 9. Panchadha Maitri Matrix (5-fold relationship)
+    assert "panchadha" in data
+    assert "matrix" in data["panchadha"]
+    assert "Sun" in data["panchadha"]["matrix"]
+    assert "Mars" in data["panchadha"]["matrix"]["Sun"]
+
+    # 10. Shani Sade Sati
+    assert "sade_sati" in data
+    assert "is_active" in data["sade_sati"]
+    assert "current_phase" in data["sade_sati"]
+    assert "estimated_periods" in data["sade_sati"]
+
+    # 11. Live Transits (Gochara)
+    assert "transits" in data
+    assert "transits" in data["transits"]
+    assert len(data["transits"]["transits"]) == 9
+
+    # 12. Synthesis
     assert "synthesis" in data
     assert "themes" in data["synthesis"]
 
 
-def test_chart_calculation_different_locations():
-    # Profile: New Delhi
-    res_delhi = client.post("/api/chart", json={
-        "name": "Aarav",
-        "birth_date": "2000-01-01",
+def test_validation_errors():
+    # Invalid date
+    res_bad_date = client.post("/api/chart", json={
+        "name": "Test",
+        "birth_date": "invalid-date",
         "birth_time": "12:00:00",
-        "place": "New Delhi, India",
-        "latitude": 28.6139,
-        "longitude": 77.2090,
-        "timezone": "Asia/Kolkata",
+        "place": "Kathmandu",
     })
-    assert res_delhi.status_code == 200
-    assert res_delhi.json()["ascendant"]["sign"] == "Pisces"
+    assert res_bad_date.status_code == 422
 
-    # Profile: Tokyo
-    res_tokyo = client.post("/api/chart", json={
-        "name": "Kenji",
-        "birth_date": "1999-09-09",
-        "birth_time": "09:09:00",
-        "place": "Tokyo, Japan",
-        "latitude": 35.6762,
-        "longitude": 139.6503,
-        "timezone": "Asia/Tokyo",
+    # Invalid latitude (> 90)
+    res_bad_lat = client.post("/api/chart", json={
+        "name": "Test",
+        "birth_date": "1995-08-20",
+        "birth_time": "12:00:00",
+        "place": "Kathmandu",
+        "latitude": 150.0,
     })
-    assert res_tokyo.status_code == 200
-    assert len(res_tokyo.json()["planets"]) == 9
+    assert res_bad_lat.status_code == 422

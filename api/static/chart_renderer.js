@@ -1,6 +1,7 @@
 /**
  * api/static/chart_renderer.js
  * High-precision SVG Chart Renderer for North Indian (Diamond) and South Indian (Square) Vedic Charts.
+ * Supports Exalted (★), Debilitated (▼), Retrograde (R), and Combust (🔥) indicators.
  */
 
 const ChartRenderer = (function () {
@@ -19,7 +20,7 @@ const ChartRenderer = (function () {
 
   const PLANET_COLORS = {
     Sun: "#f59e0b",
-    Moon: "#f1f5f9",
+    Moon: "#e2e8f0",
     Mars: "#ef4444",
     Mercury: "#10b981",
     Jupiter: "#fbbf24",
@@ -49,20 +50,6 @@ const ChartRenderer = (function () {
 
     const lagnaSign = vargaData.lagna_sign; // 1 to 12
     const housePlacements = vargaData.house_placements || {}; // house 1..12 -> array of planet names
-
-    // 12 House Polygons in North Indian diamond geometry
-    // House 1: Top center diamond
-    // House 2: Top-left upper triangle
-    // House 3: Top-left lower triangle
-    // House 4: Left center diamond
-    // House 5: Bottom-left upper triangle
-    // House 6: Bottom-left lower triangle
-    // House 7: Bottom center diamond
-    // House 8: Bottom-right lower triangle
-    // House 9: Bottom-right upper triangle
-    // House 10: Right center diamond
-    // House 11: Top-right lower triangle
-    // House 12: Top-right upper triangle
 
     const housePolygons = {
       1: [[halfW, 0], [halfW * 1.5, halfH * 0.5], [halfW, halfH], [halfW * 0.5, halfH * 0.5]],
@@ -96,31 +83,24 @@ const ChartRenderer = (function () {
     };
 
     let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" class="vedic-chart-svg north-chart">`;
-    svg += `<defs>
-      <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="2" result="blur" />
-        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-      </filter>
-    </defs>`;
 
     // Background
-    svg += `<rect width="${W}" height="${H}" fill="rgba(8, 11, 26, 0.95)" rx="10" />`;
+    svg += `<rect width="${W}" height="${H}" fill="var(--chart-bg, rgba(8, 11, 26, 0.95))" rx="10" />`;
 
     // Render 12 house interactive polygon areas
     for (let h = 1; h <= 12; h++) {
       const pts = housePolygons[h].map(p => `${p[0]},${p[1]}`).join(" ");
       const signNum = ((lagnaSign + h - 2) % 12) + 1;
       const signName = SIGN_NAMES[signNum - 1];
-      const planetsInHouse = housePlacements[h] || [];
 
-      svg += `<polygon points="${pts}" class="chart-house-poly" data-house="${h}" data-sign-num="${signNum}" data-sign-name="${signName}" fill="transparent" stroke="rgba(245, 158, 11, 0.35)" stroke-width="1.2" />`;
+      svg += `<polygon points="${pts}" class="chart-house-poly" data-house="${h}" data-sign-num="${signNum}" data-sign-name="${signName}" fill="transparent" stroke="var(--chart-line, #f59e0b)" stroke-opacity="0.35" stroke-width="1.2" />`;
     }
 
-    // Outer and diagonal geometric lines for crisp North Indian diamond layout
-    svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="none" stroke="#f59e0b" stroke-width="2" rx="4" />`;
-    svg += `<line x1="0" y1="0" x2="${W}" y2="${H}" stroke="#f59e0b" stroke-width="1.4" />`;
-    svg += `<line x1="${W}" y1="0" x2="0" y2="${H}" stroke="#f59e0b" stroke-width="1.4" />`;
-    svg += `<polygon points="${halfW},0 ${W},${halfH} ${halfW},${H} 0,${halfH}" fill="none" stroke="#f59e0b" stroke-width="1.8" />`;
+    // Outer and diagonal geometric lines
+    svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="none" stroke="var(--chart-line, #f59e0b)" stroke-width="2" rx="4" />`;
+    svg += `<line x1="0" y1="0" x2="${W}" y2="${H}" stroke="var(--chart-line, #f59e0b)" stroke-width="1.4" />`;
+    svg += `<line x1="${W}" y1="0" x2="0" y2="${H}" stroke="var(--chart-line, #f59e0b)" stroke-width="1.4" />`;
+    svg += `<polygon points="${halfW},0 ${W},${halfH} ${halfW},${H} 0,${halfH}" fill="none" stroke="var(--chart-line, #f59e0b)" stroke-width="1.8" />`;
 
     // Render Sign numbers and Planet tags in each house
     for (let h = 1; h <= 12; h++) {
@@ -128,8 +108,8 @@ const ChartRenderer = (function () {
       const signNum = ((lagnaSign + h - 2) % 12) + 1;
       const planetsInHouse = housePlacements[h] || [];
 
-      // Sign number in corner/top
-      svg += `<text x="${center.signPos.x}" y="${center.signPos.y}" fill="#fbbf24" font-size="11" font-weight="700" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" dominant-baseline="middle" opacity="0.9">${signNum}</text>`;
+      // Sign number
+      svg += `<text x="${center.signPos.x}" y="${center.signPos.y}" fill="var(--chart-sign-num, #f59e0b)" font-size="11" font-weight="700" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" dominant-baseline="middle" opacity="0.9">${signNum}</text>`;
 
       // Render Planet tags
       if (planetsInHouse.length > 0) {
@@ -144,9 +124,10 @@ const ChartRenderer = (function () {
 
           let badge = "";
           if (pObj) {
-            if (pObj.retrograde) badge += " <tspan fill='#ef4444' font-size='9'>R</tspan>";
-            if (pObj.exalted) badge += " <tspan fill='#34d399' font-size='9'>★</tspan>";
-            if (pObj.debilitated) badge += " <tspan fill='#f87171' font-size='9'>▼</tspan>";
+            if (pObj.retrograde) badge += " <tspan fill='#f59e0b' font-size='8.5'>R</tspan>";
+            if (pObj.exalted) badge += " <tspan fill='#10b981' font-size='8.5'>★</tspan>";
+            if (pObj.debilitated) badge += " <tspan fill='#ef4444' font-size='8.5'>▼</tspan>";
+            if (pObj.is_combust) badge += " <tspan fill='#f97316' font-size='8.5'>🔥</tspan>";
           }
 
           const py = startY + idx * planetSpacing;
@@ -171,12 +152,6 @@ const ChartRenderer = (function () {
 
     const lagnaSign = vargaData.lagna_sign; // 1 to 12
     const planetSigns = vargaData.planet_signs || {}; // Planet name -> sign 1..12
-
-    // Map sign (1..12) to South Indian fixed grid cell coordinates:
-    // Row 0: Pisces(12) [col 0], Aries(1) [col 1], Taurus(2) [col 2], Gemini(3) [col 3]
-    // Row 1: Aquarius(11) [col 0], Center [cols 1-2], Cancer(4) [col 3]
-    // Row 2: Capricorn(10) [col 0], Center [cols 1-2], Leo(5) [col 3]
-    // Row 3: Sagittarius(9) [col 0], Scorpio(8) [col 1], Libra(7) [col 2], Virgo(6) [col 3]
 
     const signGridCells = {
       12: { row: 0, col: 0, name: "Pisces" },
@@ -204,12 +179,12 @@ const ChartRenderer = (function () {
     let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" class="vedic-chart-svg south-chart">`;
 
     // Background
-    svg += `<rect width="${W}" height="${H}" fill="rgba(8, 11, 26, 0.95)" rx="8" />`;
+    svg += `<rect width="${W}" height="${H}" fill="var(--chart-bg, rgba(8, 11, 26, 0.95))" rx="8" />`;
 
     // Central Box
-    svg += `<rect x="${cellW}" y="${cellH}" width="${cellW * 2}" height="${cellH * 2}" fill="rgba(4, 6, 16, 0.95)" stroke="#f59e0b" stroke-width="1.5" />`;
-    svg += `<text x="${W / 2}" y="${H / 2 - 8}" fill="#fbbf24" font-family="'Cinzel', serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">${vargaData.code || "D1"} KUNDALI</text>`;
-    svg += `<text x="${W / 2}" y="${H / 2 + 14}" fill="#94a3b8" font-family="'Outfit', sans-serif" font-size="11" text-anchor="middle" dominant-baseline="middle">Lagna: ${SIGN_NAMES[lagnaSign - 1]}</text>`;
+    svg += `<rect x="${cellW}" y="${cellH}" width="${cellW * 2}" height="${cellH * 2}" fill="var(--bg-glass, rgba(4, 6, 16, 0.95))" stroke="var(--chart-line, #f59e0b)" stroke-width="1.5" />`;
+    svg += `<text x="${W / 2}" y="${H / 2 - 8}" fill="var(--gold-primary, #fbbf24)" font-family="'Cinzel', serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">${vargaData.code || "D1"} KUNDALI</text>`;
+    svg += `<text x="${W / 2}" y="${H / 2 + 14}" fill="var(--text-secondary, #94a3b8)" font-family="'Outfit', sans-serif" font-size="11" text-anchor="middle" dominant-baseline="middle">Lagna: ${SIGN_NAMES[lagnaSign - 1]}</text>`;
 
     // Draw 12 cells
     for (let s = 1; s <= 12; s++) {
@@ -220,10 +195,10 @@ const ChartRenderer = (function () {
       const houseNum = ((s - lagnaSign + 12) % 12) + 1;
 
       svg += `<g class="south-cell-group" data-sign="${s}" data-sign-name="${cell.name}" data-house="${houseNum}">`;
-      svg += `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" fill="transparent" stroke="rgba(245, 158, 11, 0.4)" stroke-width="1.2" class="chart-house-poly" />`;
+      svg += `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" fill="transparent" stroke="var(--chart-line, #f59e0b)" stroke-opacity="0.4" stroke-width="1.2" class="chart-house-poly" />`;
 
-      // Sign name in subtle corner
-      svg += `<text x="${x + 6}" y="${y + 12}" fill="#64748b" font-size="9" font-weight="600" font-family="'Plus Jakarta Sans', sans-serif">${cell.name.substring(0, 3)} (${s})</text>`;
+      // Sign name
+      svg += `<text x="${x + 6}" y="${y + 12}" fill="var(--text-muted, #64748b)" font-size="9" font-weight="600" font-family="'Plus Jakarta Sans', sans-serif">${cell.name.substring(0, 3)} (${s})</text>`;
 
       // Lagna marker (ASC)
       if (isLagna) {
@@ -232,7 +207,7 @@ const ChartRenderer = (function () {
       }
 
       // House number tag
-      svg += `<text x="${x + cellW - 6}" y="${y + cellH - 6}" fill="#fbbf24" font-size="10" font-weight="600" text-anchor="end" font-family="'Plus Jakarta Sans', sans-serif">H${houseNum}</text>`;
+      svg += `<text x="${x + cellW - 6}" y="${y + cellH - 6}" fill="var(--chart-sign-num, #f59e0b)" font-size="10" font-weight="600" text-anchor="end" font-family="'Plus Jakarta Sans', sans-serif">H${houseNum}</text>`;
 
       // Planets in this sign
       const planetsInSign = signPlanets[s] || [];
@@ -247,9 +222,10 @@ const ChartRenderer = (function () {
 
           let badge = "";
           if (pObj) {
-            if (pObj.retrograde) badge += " <tspan fill='#ef4444' font-size='8'>R</tspan>";
-            if (pObj.exalted) badge += " <tspan fill='#34d399' font-size='8'>★</tspan>";
-            if (pObj.debilitated) badge += " <tspan fill='#f87171' font-size='8'>▼</tspan>";
+            if (pObj.retrograde) badge += " <tspan fill='#f59e0b' font-size='8'>R</tspan>";
+            if (pObj.exalted) badge += " <tspan fill='#10b981' font-size='8'>★</tspan>";
+            if (pObj.debilitated) badge += " <tspan fill='#ef4444' font-size='8'>▼</tspan>";
+            if (pObj.is_combust) badge += " <tspan fill='#f97316' font-size='8'>🔥</tspan>";
           }
 
           svg += `<text x="${x + cellW / 2}" y="${startY + idx * spacing}" class="chart-planet-label" data-planet="${pName}" data-house="${houseNum}" fill="${pColor}" font-size="11" font-weight="700" font-family="'Outfit', sans-serif" text-anchor="middle" dominant-baseline="middle">${pCode}${badge}</text>`;
@@ -260,7 +236,7 @@ const ChartRenderer = (function () {
     }
 
     // Outer border
-    svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="none" stroke="#f59e0b" stroke-width="2" rx="4" />`;
+    svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="none" stroke="var(--chart-line, #f59e0b)" stroke-width="2" rx="4" />`;
 
     svg += `</svg>`;
     return svg;
