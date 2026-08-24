@@ -409,6 +409,7 @@ from yogas.budha_aditya import detect_budha_aditya
 from yogas.chandra_mangala import detect_chandra_mangala
 from yogas.neecha_bhanga import detect_neecha_bhanga
 from yogas.parivartana import detect_parivartana
+from yogas.guru_chandal import detect_guru_chandal
 
 
 def serialize_yogas(context: Any) -> List[Dict[str, Any]]:
@@ -421,6 +422,7 @@ def serialize_yogas(context: Any) -> List[Dict[str, Any]]:
         ("Chandra-Mangala Yoga", detect_chandra_mangala),
         ("Neecha Bhanga Raja Yoga", detect_neecha_bhanga),
         ("Parivartana Yoga", detect_parivartana),
+        ("Guru Chandal Yoga", detect_guru_chandal),
     ]
 
     raw_results = []
@@ -463,6 +465,9 @@ def serialize_yogas(context: Any) -> List[Dict[str, Any]]:
         elif "Chandra-Mangala" in res.name:
             category = "Financial Energy & Commercial Drive"
             nature = "Auspicious"
+        elif "Guru Chandal" in res.name:
+            category = "Shadow / Guru Chandal Yoga"
+            nature = "Unconventional / Requires Prudence"
         elif "Parivartana" in res.name:
             if "Dainya" in res.name:
                 category = "Exchange Yoga (Dusthana Involved)"

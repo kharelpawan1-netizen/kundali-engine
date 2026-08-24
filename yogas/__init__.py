@@ -59,6 +59,17 @@ from .budha_aditya import (
     BudhaAdityaYogaRule,
 )
 
+from .guru_chandal import (
+    GURU_CHANDAL_YOGA_NAME,
+    JUPITER as GURU_CHANDAL_JUPITER,
+    RAHU as GURU_CHANDAL_RAHU,
+    get_planet_house,
+    jupiter_rahu_conjunct,
+    guru_chandal_evidence,
+    detect_guru_chandal,
+    GuruChandalYogaRule,
+)
+
 
 __all__ = [
     "YogaResult",
@@ -104,4 +115,13 @@ __all__ = [
     "budha_aditya_evidence",
     "detect_budha_aditya",
     "BudhaAdityaYogaRule",
+
+    "GURU_CHANDAL_YOGA_NAME",
+    "GURU_CHANDAL_JUPITER",
+    "GURU_CHANDAL_RAHU",
+    "get_planet_house",
+    "jupiter_rahu_conjunct",
+    "guru_chandal_evidence",
+    "detect_guru_chandal",
+    "GuruChandalYogaRule",
 ]
