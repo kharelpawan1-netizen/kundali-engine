@@ -656,6 +656,53 @@
     </div>
   </div>
 
+  <!-- Export / Print Modal -->
+  <div class="modal-overlay" id="modalExportReport" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-with-badge">
+          <h3>🖨️ Export & Print Kundali</h3>
+          <span class="badge badge-gold">PDF / SVG / JSON</span>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseExportModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13.5px;color:var(--text-secondary);margin-bottom:18px;">
+          Choose your export format below. You can generate a publication-ready PDF report, vector SVG chart, or raw astrological dataset.
+        </p>
+
+        <div class="export-options-grid">
+          <div class="export-option-card" id="btnTriggerPrint">
+            <div class="export-icon">📄</div>
+            <div class="export-details">
+              <span class="export-title">Print / Save as PDF</span>
+              <span class="export-desc">Full formatted Vedic horoscope document with chart, planetary tables & dasha timeline</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-gold">Print PDF</button>
+          </div>
+
+          <div class="export-option-card" id="btnExportSvgModal">
+            <div class="export-icon">📐</div>
+            <div class="export-details">
+              <span class="export-title">Download Chart SVG</span>
+              <span class="export-desc">High-resolution vector graphic of currently selected divisional chart</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline">Save SVG</button>
+          </div>
+
+          <div class="export-option-card" id="btnExportChartJson">
+            <div class="export-icon">📦</div>
+            <div class="export-details">
+              <span class="export-title">Export Horoscope Data (JSON)</span>
+              <span class="export-desc">Complete calculated dataset including all 16 vargas, dashas, balus & yogas</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline">Export JSON</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Nepal 77 Districts Modal -->
   <div class="modal-overlay" id="modalNepalDistricts" style="display: none;">
     <div class="modal-card modal-lg">

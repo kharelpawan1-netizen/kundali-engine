@@ -1288,21 +1288,78 @@
     }
 
     // Download SVG
+    function triggerDownloadSvg() {
+      const svgEl = chartSvgWrapper ? chartSvgWrapper.querySelector("svg") : null;
+      if (!svgEl) {
+        showToast("No active chart SVG found to download.", "error");
+        return;
+      }
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const name = (document.getElementById("nativeName").value || "Kundali").replace(/\s+/g, "_");
+      link.href = url;
+      link.download = `${name}_${currentVarga}_Chart.svg`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${currentVarga} Chart as SVG!`, "success");
+    }
+
     const btnDownloadSvg = document.getElementById("btnDownloadSvg");
     if (btnDownloadSvg) {
-      btnDownloadSvg.addEventListener("click", () => {
-        const svgEl = chartSvgWrapper.querySelector("svg");
-        if (!svgEl) return;
-        const svgData = new XMLSerializer().serializeToString(svgEl);
-        const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
+      btnDownloadSvg.addEventListener("click", triggerDownloadSvg);
+    }
+
+    // Export & Print Modal Controller
+    const btnPrintReport = document.getElementById("btnPrintReport");
+    const btnCloseExportModal = document.getElementById("btnCloseExportModal");
+    const btnTriggerPrint = document.getElementById("btnTriggerPrint");
+    const btnExportSvgModal = document.getElementById("btnExportSvgModal");
+    const btnExportChartJson = document.getElementById("btnExportChartJson");
+
+    if (btnPrintReport) {
+      btnPrintReport.addEventListener("click", () => {
+        openModal("modalExportReport");
+      });
+    }
+
+    if (btnCloseExportModal) {
+      btnCloseExportModal.addEventListener("click", () => {
+        closeModal("modalExportReport");
+      });
+    }
+
+    if (btnTriggerPrint) {
+      btnTriggerPrint.addEventListener("click", () => {
+        closeModal("modalExportReport");
+        setTimeout(() => {
+          window.print();
+        }, 200);
+      });
+    }
+
+    if (btnExportSvgModal) {
+      btnExportSvgModal.addEventListener("click", () => {
+        closeModal("modalExportReport");
+        triggerDownloadSvg();
+      });
+    }
+
+    if (btnExportChartJson) {
+      btnExportChartJson.addEventListener("click", () => {
+        closeModal("modalExportReport");
+        if (!currentChartData) {
+          showToast("Please calculate a chart first before exporting data.", "error");
+          return;
+        }
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentChartData, null, 2));
+        const a = document.createElement("a");
         const name = (document.getElementById("nativeName").value || "Kundali").replace(/\s+/g, "_");
-        link.href = url;
-        link.download = `${name}_${currentVarga}_Chart.svg`;
-        link.click();
-        URL.revokeObjectURL(url);
-        showToast(`Downloaded ${currentVarga} Chart as SVG!`, "success");
+        a.href = dataStr;
+        a.download = `${name}_Complete_Kundali_Data.json`;
+        a.click();
+        showToast("Horoscope JSON dataset exported successfully!", "success");
       });
     }
 
