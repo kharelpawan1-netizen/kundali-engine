@@ -11,6 +11,8 @@
     currentVarga: "D1",
     savedProfiles: [],
     sampleProfiles: [],
+    nepalProvinces: null,
+    nepalDistricts: [],
     citySearchTimer: null,
   };
 
@@ -28,6 +30,7 @@
     inputLng: document.getElementById("inputLng"),
     inputTz: document.getElementById("inputTz"),
     btnToggleManualCoords: document.getElementById("btnToggleManualCoords"),
+    btnOpenDistrictsModal: document.getElementById("btnOpenDistrictsModal"),
     manualCoordsDrawer: document.getElementById("manualCoordsDrawer"),
     ayanamshaSelect: document.getElementById("ayanamshaSelect"),
     btnCalculate: document.getElementById("btnCalculate"),
@@ -94,6 +97,12 @@
     savedProfilesList: document.getElementById("savedProfilesList"),
     btnExportJson: document.getElementById("btnExportJson"),
     importJsonInput: document.getElementById("importJsonInput"),
+
+    // Nepal 77 Districts Modal
+    modalNepalDistricts: document.getElementById("modalNepalDistricts"),
+    btnCloseDistrictsModal: document.getElementById("btnCloseDistrictsModal"),
+    districtFilterInput: document.getElementById("districtFilterInput"),
+    nepalProvincesContainer: document.getElementById("nepalProvincesContainer"),
 
     // Tooltip & Canvas
     astralTooltip: document.getElementById("astralTooltip"),
@@ -250,6 +259,23 @@
       elements.modalSavedProfiles.style.display = "none";
     });
 
+    // Nepal 77 Districts Modal
+    if (elements.btnOpenDistrictsModal) {
+      elements.btnOpenDistrictsModal.addEventListener("click", () => {
+        openNepalDistrictsModal();
+      });
+    }
+    if (elements.btnCloseDistrictsModal) {
+      elements.btnCloseDistrictsModal.addEventListener("click", () => {
+        elements.modalNepalDistricts.style.display = "none";
+      });
+    }
+    if (elements.districtFilterInput) {
+      elements.districtFilterInput.addEventListener("input", (e) => {
+        filterNepalDistricts(e.target.value);
+      });
+    }
+
     elements.btnSaveCurrent.addEventListener("click", saveCurrentProfile);
     elements.btnPrintReport.addEventListener("click", () => window.print());
 
@@ -265,18 +291,23 @@
   // ============================================================
   async function fetchCitySuggestions(query) {
     try {
-      const res = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=10`);
+      const res = await fetch(`/api/cities?q=${encodeURIComponent(query)}&limit=15`);
       const data = await res.json();
       if (data.results && data.results.length > 0) {
         elements.cityDropdown.innerHTML = data.results
-          .map(
-            (c) => `
-          <div class="city-item" data-name="${c.name}" data-lat="${c.latitude}" data-lng="${c.longitude}" data-tz="${c.timezone}">
-            <span class="city-item-name">📍 ${c.name}</span>
-            <span class="city-item-tz">${c.timezone}</span>
-          </div>
-        `
-          )
+          .map((c) => {
+            const isNepal = c.country === "Nepal" || c.timezone === "Asia/Kathmandu";
+            const icon = isNepal ? "🇳🇵" : "📍";
+            const provTag = c.province
+              ? `<span class="badge badge-gold" style="font-size:10px; margin-left:6px">${c.province}</span>`
+              : "";
+            return `
+              <div class="city-item" data-name="${c.name}" data-lat="${c.latitude}" data-lng="${c.longitude}" data-tz="${c.timezone}">
+                <span class="city-item-name">${icon} ${c.name} ${provTag}</span>
+                <span class="city-item-tz">${c.timezone}</span>
+              </div>
+            `;
+          })
           .join("");
         elements.cityDropdown.style.display = "block";
 
@@ -939,6 +970,111 @@
       }
     };
     reader.readAsText(file);
+  }
+
+  // ============================================================
+  // Nepal 77 Districts Modal Picker
+  // ============================================================
+  async function openNepalDistrictsModal() {
+    if (!elements.modalNepalDistricts) return;
+    elements.modalNepalDistricts.style.display = "flex";
+    if (elements.districtFilterInput) {
+      elements.districtFilterInput.value = "";
+      elements.districtFilterInput.focus();
+    }
+    if (!state.nepalProvinces) {
+      try {
+        const res = await fetch("/api/nepal-districts");
+        const data = await res.json();
+        state.nepalProvinces = data.provinces;
+        state.nepalDistricts = data.districts;
+        renderNepalDistricts(state.nepalProvinces);
+      } catch (err) {
+        console.warn("Failed to load Nepal districts:", err);
+      }
+    } else {
+      renderNepalDistricts(state.nepalProvinces);
+    }
+  }
+
+  function renderNepalDistricts(provincesObj) {
+    if (!elements.nepalProvincesContainer) return;
+    const provinceOrder = ["Koshi", "Madhesh", "Bagmati", "Gandaki", "Lumbini", "Karnali", "Sudurpashchim"];
+
+    let html = "";
+    provinceOrder.forEach((provName) => {
+      const districts = provincesObj[provName] || [];
+      if (!districts.length) return;
+      html += `
+        <div class="province-group" data-province="${provName}">
+          <div class="province-title">
+            <span>🚩 ${provName} Province</span>
+            <span class="badge badge-gold">${districts.length} Districts</span>
+          </div>
+          <div class="province-districts-grid">
+            ${districts
+              .map(
+                (d) => `
+              <div class="district-chip" data-name="${d.name}" data-city="${d.city}" data-lat="${d.latitude}" data-lng="${d.longitude}" data-tz="${d.timezone}">
+                <span class="district-chip-city">📍 ${d.city}</span>
+                <span class="district-chip-badge">${d.province}</span>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        </div>
+      `;
+    });
+
+    if (!html) {
+      html = `<p style="color:var(--text-muted); text-align:center; padding:30px 0;">No districts found matching your search.</p>`;
+    }
+
+    elements.nepalProvincesContainer.innerHTML = html;
+
+    elements.nepalProvincesContainer.querySelectorAll(".district-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        selectDistrict(chip.dataset);
+      });
+    });
+  }
+
+  function filterNepalDistricts(query) {
+    const q = query.trim().toLowerCase();
+    if (!state.nepalDistricts || !state.nepalProvinces) return;
+
+    if (!q) {
+      renderNepalDistricts(state.nepalProvinces);
+      return;
+    }
+
+    const filteredProvinces = {};
+    for (const [prov, dists] of Object.entries(state.nepalProvinces)) {
+      const matched = dists.filter(
+        (d) =>
+          d.name.toLowerCase().includes(q) ||
+          d.city.toLowerCase().includes(q) ||
+          d.district.toLowerCase().includes(q) ||
+          prov.toLowerCase().includes(q)
+      );
+      if (matched.length > 0) {
+        filteredProvinces[prov] = matched;
+      }
+    }
+
+    renderNepalDistricts(filteredProvinces);
+  }
+
+  function selectDistrict(dataset) {
+    elements.birthPlace.value = dataset.name;
+    elements.inputLat.value = dataset.lat;
+    elements.inputLng.value = dataset.lng;
+    elements.inputTz.value = dataset.tz;
+    if (elements.modalNepalDistricts) {
+      elements.modalNepalDistricts.style.display = "none";
+    }
+    submitChartCalculation();
   }
 
   // Run initial boot

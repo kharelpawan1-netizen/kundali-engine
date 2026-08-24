@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from api.cities_db import search_cities, CITIES_DATA
+from api.cities_db import search_cities, CITIES_DATA, NEPAL_DISTRICTS_DATA
 from api.serializers import serialize_complete_chart
 from astronomy.swiss import Ayanamsha, set_ayanamsha, set_ephemeris_path
 from engine import HoroscopeEngine
@@ -89,11 +89,27 @@ def health_check() -> Dict[str, Any]:
 @app.get("/api/cities")
 def get_cities(
     q: Optional[str] = Query(default="", description="Search query"),
-    limit: int = Query(default=12, ge=1, le=50, description="Max results"),
+    limit: int = Query(default=15, ge=1, le=100, description="Max results"),
 ) -> Dict[str, Any]:
     """Search pre-indexed fast city database."""
     results = search_cities(q, limit=limit)
     return {"results": results, "count": len(results)}
+
+
+@app.get("/api/nepal-districts")
+def get_nepal_districts() -> Dict[str, Any]:
+    """Return all 77 districts of Nepal grouped by province."""
+    provinces: Dict[str, List[Dict[str, Any]]] = {}
+    for d in NEPAL_DISTRICTS_DATA:
+        prov = d.get("province", "Other")
+        if prov not in provinces:
+            provinces[prov] = []
+        provinces[prov].append(d)
+    return {
+        "total_districts": len(NEPAL_DISTRICTS_DATA),
+        "provinces": provinces,
+        "districts": NEPAL_DISTRICTS_DATA,
+    }
 
 
 @app.post("/api/geocode")

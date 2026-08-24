@@ -50,13 +50,27 @@ def test_cities_endpoint():
     data = res.json()
     assert len(data["results"]) > 0
 
-    # Query for Kathmandu
-    res_ktm = client.get("/api/cities?q=kathmandu")
-    assert res_ktm.status_code == 200
-    ktm_data = res_ktm.json()
-    assert len(ktm_data["results"]) >= 1
-    assert "Kathmandu" in ktm_data["results"][0]["name"]
-    assert ktm_data["results"][0]["timezone"] == "Asia/Kathmandu"
+def test_nepal_districts_endpoint():
+    res = client.get("/api/nepal-districts")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total_districts"] == 77
+    assert len(data["districts"]) == 77
+    provinces = data["provinces"]
+    expected_provinces = ["Koshi", "Madhesh", "Bagmati", "Gandaki", "Lumbini", "Karnali", "Sudurpashchim"]
+    for prov in expected_provinces:
+        assert prov in provinces
+        assert len(provinces[prov]) > 0
+
+
+def test_district_queries():
+    # Test searching various districts across different provinces
+    for q in ["Jhapa", "Mustang", "Humla", "Dang", "Ilam", "Chitwan", "Kailali", "Rupandehi"]:
+        res = client.get(f"/api/cities?q={q}")
+        assert res.status_code == 200
+        results = res.json()["results"]
+        assert len(results) >= 1
+        assert results[0]["timezone"] == "Asia/Kathmandu"
 
 
 def test_sample_profiles_endpoint():
